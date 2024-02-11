@@ -12,3 +12,7 @@ But, when playing live with it, both bpm changes and voice changes on a pot are 
 THIS BOARD HAS NOT YET BEEN TESTED.
 
 I'll post as soon as it's gone through production.
+
+![PCB](pcb.png)
+
+![Breadboard](scarp.png)
