@@ -40,45 +40,54 @@ import usb_midi
 # added audio from arpy
 import audiopwmio, audiomixer, synthio
 import ulab.numpy as np
-num_voices = 1       # how many voices for each note
+num_voices = 2       # how many voices for each note
 lpf_basef = 2500     # filter lowest frequency
-lpf_resonance = 1.5  # filter q
+lpf_resonance = 1.2  # filter q
 
 knobA = analogio.AnalogIn(board.A0)
 knobB = analogio.AnalogIn(board.A1)
 
 audio = audiopwmio.PWMAudioOut(board.GP22)  # RX pin on QTPY RP2040
 
-mixer = audiomixer.Mixer(channel_count=1, sample_rate=22050, buffer_size=2048)
-synth = synthio.Synthesizer(channel_count=1, sample_rate=22050)
+mixer = audiomixer.Mixer(channel_count=1, sample_rate=44100, buffer_size=4096)
+synth = synthio.Synthesizer(channel_count=1, sample_rate=44100)
 audio.play(mixer)
-mixer.voice[0].play(synth)
-mixer.voice[0].level = 0.8
 
+amp_env = synthio.Envelope( attack_time=0.05, sustain_level=0.8, release_time=0.5)
 # our oscillator waveform, a 512 sample downward saw wave going from +/-30k
-wave_saw = np.linspace(30000, -30000, num=512, dtype=np.int16)  # max is +/-32k but gives us headroom
-amp_env = synthio.Envelope(attack_level=1, sustain_level=1, release_time=0.5)
+#wave_saw = np.linspace(30000, -30000, num=512, dtype=np.int16)  # max is +/-32k but gives us headroom
+SAMPLE_SIZE = 512
+SAMPLE_VOLUME = 32000  # 0-32767
+half_period = SAMPLE_SIZE // 2
+
+wave_sine = np.array(np.sin(np.linspace(0, 2*np.pi, SAMPLE_SIZE, endpoint=False)) * SAMPLE_VOLUME, dtype=np.int16)
+
+wave_saw = np.linspace(SAMPLE_VOLUME, -SAMPLE_VOLUME, num=SAMPLE_SIZE, dtype=np.int16)
+wave_tri = np.concatenate((np.linspace(-SAMPLE_VOLUME, SAMPLE_VOLUME, num=half_period, dtype=np.int16), np.linspace(SAMPLE_VOLUME, -SAMPLE_VOLUME, num=half_period, dtype=np.int16)))
+
+wave_square = np.concatenate((np.full(half_period, SAMPLE_VOLUME, dtype=np.int16), np.full(half_period, -SAMPLE_VOLUME, dtype=np.int16)))
 
 voices=[]  # holds our currently sounding voices ('Notes' in synthio speak)
 
 knobfilter = 0.75
 knobAval = knobA.value
 knobBval = knobB.value
+
 led_pins = (board.GP1, board.GP3, board.GP5, board.GP7,
             board.GP9, board.GP11, board.GP13, board.GP15)
+
+def lerp(a, b, t):  # function to morph shapes w linear interpolation
+    return (1-t) * a + t * b
+
+# end ADD
 
 # local libraries in CIRCUITPY
 import winterbloom_smolmidi as smolmidi
 from sequencer import StepSequencer, ticks_ms
-
-if 'macropad' in board.board_id:
-    from sequencer_display_macropad import SequencerDisplayMacroPad as SequencerDisplay
-    from sequencer_hardware_macropad import Hardware
-else:
-    import displayio
-    displayio.release_displays() # can we put this in sequencer_hardware?
-    from sequencer_display import SequencerDisplay
-    from sequencer_hardware import Hardware
+import displayio
+displayio.release_displays() # can we put this in sequencer_hardware?
+from sequencer_display import SequencerDisplay
+from sequencer_hardware import Hardware
 
 do_usb_midi = True
 do_serial_midi = True
@@ -94,10 +103,8 @@ gate_default = 8    # ranges 0-15
 # array of sequences used by Sequencer (which only knows about one sequence)
 sequences = [ [(None)] * num_steps ] * num_steps  # pre-fill arrays for easy use later
 
-
 usb_out = usb_midi.ports[1]
 usb_in = usb_midi.ports[0]
-
 usb_midi_in = smolmidi.MidiIn(usb_in)
 
 
@@ -146,7 +153,7 @@ def note_on(n):
         f = fo * (1 + i*0.007)
         lpf_f = fo * 8  # a kind of key tracking
         lpf = synth.low_pass_filter( lpf_f, lpf_resonance )
-        voices.append( synthio.Note( frequency=f, filter=lpf, envelope=amp_env, waveform=wave_saw) )
+        voices.append( synthio.Note( frequency=f, filter=lpf, envelope=amp_env, waveform=wave_empty) )
     synth.press(voices)
     
 
@@ -235,10 +242,28 @@ step_push = -1  # which step button is being pushed, -1 == no push
 step_push_millis = 0  # when was a step button pushed
 step_edited = False  # was a step edited while it was held?
 
+# do the audio init after the other inits
+mixer.voice[0].level = 0.0
+mixer.voice[0].play(synth)
+mixer.voice[0].level = 0.8
+wave_empty = np.zeros(SAMPLE_SIZE, dtype=np.int16)  # empty buffer we use array slice copy "[:]" on
+pos = 0
+my_wave = wave_empty
 print("Ready.")
 
 while True:
     gc.collect()  # just to make the timing of this consistent
+
+    # filter noisy adc
+    knobAval = knobAval * knobfilter + (1-knobfilter) * knobA.value
+    knobBval = knobBval * knobfilter + (1-knobfilter) * knobB.value
+    pos = map_range( knobAval, 100, 65535, 1.0, 0.1)
+    lpf_resonance = map_range( knobBval, 65535,0, 0.1, 5.5) 
+    my_wave[:] = lerp(wave_saw, wave_tri, pos)
+    #print(pos)
+    for x in voices:
+        x.waveform = my_wave
+
 
     midi_receive()
 
@@ -248,16 +273,13 @@ while True:
     for i in range(num_steps):
         (n,v,gate,on) = seqr.steps[ i ]
         if i == seqr.i:  
-            c = True  # UI: bright red = indicate sequence position
             hw.led_set(i,True)
-        elif on:         
-            cmax = 20   # UI: dim red = indicate mute/unmute state
-            hw.led_set(i,True)
-        else:            
-            c = False    # UI: off = muted
+        elif on:        # off, on, off gives light blinking 
             hw.led_set(i,False)
-        #c = max( hw.led_get(i) - hw.leds_fade_amount, cmax)  # nice fade
-        #hw.led_set(i,True)
+            hw.led_set(i,True)
+            hw.led_set(i,False)
+        else:            
+            hw.led_set(i,False)
     hw.leds_show()
 
     seqr_display.update_ui_step()
