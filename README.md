@@ -13,6 +13,6 @@ THIS BOARD HAS NOT YET BEEN TESTED.
 
 I'll post as soon as it's gone through production.
 
-![PCB](pcb.png)
+![PCB](scarp-pcb.png)
 
-![Breadboard](scarp.png)
+![Breadboard](scarp-breadboard.png)
