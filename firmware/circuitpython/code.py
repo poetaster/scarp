@@ -54,8 +54,6 @@ synth = synthio.Synthesizer(channel_count=1, sample_rate=44100)
 audio.play(mixer)
 
 amp_env = synthio.Envelope( attack_time=0.05, sustain_level=0.8, release_time=0.5)
-# our oscillator waveform, a 512 sample downward saw wave going from +/-30k
-#wave_saw = np.linspace(30000, -30000, num=512, dtype=np.int16)  # max is +/-32k but gives us headroom
 SAMPLE_SIZE = 512
 SAMPLE_VOLUME = 32000  # 0-32767
 half_period = SAMPLE_SIZE // 2
@@ -259,7 +257,7 @@ while True:
     knobBval = knobBval * knobfilter + (1-knobfilter) * knobB.value
     pos = map_range( knobAval, 100, 65535, 1.0, 0.1)
     lpf_resonance = map_range( knobBval, 65535,0, 0.1, 5.5) 
-    my_wave[:] = lerp(wave_saw, wave_tri, pos)
+    my_wave[:] = lerp(wave_sine, wave_tri, pos)
     #print(pos)
     for x in voices:
         x.waveform = my_wave
