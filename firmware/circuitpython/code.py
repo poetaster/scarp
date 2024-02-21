@@ -47,12 +47,6 @@ lpf_resonance = 1.2  # filter q
 knobA = analogio.AnalogIn(board.A0)
 knobB = analogio.AnalogIn(board.A1)
 
-audio = audiopwmio.PWMAudioOut(board.GP22)  # RX pin on QTPY RP2040
-
-mixer = audiomixer.Mixer(channel_count=1, sample_rate=44100, buffer_size=4096)
-synth = synthio.Synthesizer(channel_count=1, sample_rate=44100)
-audio.play(mixer)
-
 amp_env = synthio.Envelope( attack_time=0.05, sustain_level=0.8, release_time=0.5)
 SAMPLE_SIZE = 512
 SAMPLE_VOLUME = 32000  # 0-32767
@@ -241,12 +235,18 @@ step_push_millis = 0  # when was a step button pushed
 step_edited = False  # was a step edited while it was held?
 
 # do the audio init after the other inits
-mixer.voice[0].level = 0.0
-mixer.voice[0].play(synth)
-mixer.voice[0].level = 0.8
 wave_empty = np.zeros(SAMPLE_SIZE, dtype=np.int16)  # empty buffer we use array slice copy "[:]" on
 pos = 0
 my_wave = wave_empty
+
+audio = audiopwmio.PWMAudioOut(board.GP22)  # RX pin on QTPY RP2040
+mixer = audiomixer.Mixer(channel_count=1, sample_rate=44100, buffer_size=4096)
+synth = synthio.Synthesizer(channel_count=1, sample_rate=44100)
+audio.play(mixer)
+
+mixer.voice[0].level = 0.0
+mixer.voice[0].play(synth)
+mixer.voice[0].level = 0.8
 print("Ready.")
 
 while True:
@@ -273,6 +273,8 @@ while True:
         if i == seqr.i:  
             hw.led_set(i,True)
         elif on:        # off, on, off gives light blinking 
+            hw.led_set(i,False)
+            hw.led_set(i,True)
             hw.led_set(i,False)
             hw.led_set(i,True)
             hw.led_set(i,False)
