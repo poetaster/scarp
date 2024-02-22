@@ -38,8 +38,8 @@
 // 
 #define AIN0 	26
 #define AIN1 	27
-#define AIN2 	28
-#define AIN3 	29 // not available on standard Pico board
+//#define AIN2 	28
+//#define AIN3 	29 // not available on standard Pico board
 
 
 
@@ -64,7 +64,7 @@
 #define LED7 15
 
 
-#define CLOCKOUT 21
+#define CLOCKOUT 16
 
 // MIDI serial port pins - not really MIDI but the serial port is exposed on the first two jacks
 #define MIDIRX 17

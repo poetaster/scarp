@@ -1,47 +1,47 @@
 /* Copyright 2023 Rich Heslip, 2024 Mark Washeim
 
- Author: Rich Heslip
- Author: Mark Washeim <blueprint@poetaster.de>
+  Author: Rich Heslip
+  Author: Mark Washeim <blueprint@poetaster.de>
 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
- The above copyright notice and this permission notice shall be included in
- all copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 
   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
 
- See http://creativecommons.org/licenses/MIT/ for more information.
+  See http://creativecommons.org/licenses/MIT/ for more information.
 
- -----------------------------------------------------------------------------
+  -----------------------------------------------------------------------------
 
 
-// sample player inspired by Jan Ostman's ESP8266 drum machine http://janostman.wordpress.com
-// completely rewritten for the Motivation Radio Eurorack module
-// plays samples in response to gate/trigger inputs and MIDI note on messages
-// will play any 22khz sample file converted to a header file in the appropriate format
-// Feb 3/19 - initial version
-// Feb 11/19 - sped up encoder/trigger ISR so it will catch 1ms pulses from Grids
-// Jan 2023 - ported code to Pi Pico so I can use it on a 16mb flash version
-// oct 2023 - ported to Pikocore Hardware and converted to a simple beatbox
-// Feb 2024 - added step clock out
-// Feb 2024 - blueprint replaced pattern logic.
-// Feb 2024 - blueprint add  beatbox kit 
+  // sample player inspired by Jan Ostman's ESP8266 drum machine http://janostman.wordpress.com
+  // completely rewritten for the Motivation Radio Eurorack module
+  // plays samples in response to gate/trigger inputs and MIDI note on messages
+  // will play any 22khz sample file converted to a header file in the appropriate format
+  // Feb 3/19 - initial version
+  // Feb 11/19 - sped up encoder/trigger ISR so it will catch 1ms pulses from Grids
+  // Jan 2023 - ported code to Pi Pico so I can use it on a 16mb flash version
+  // oct 2023 - ported to Pikocore Hardware and converted to a simple beatbox
+  // Feb 2024 - added step clock out
+  // Feb 2024 - blueprint replaced pattern logic.
+  // Feb 2024 - blueprint add  beatbox kit
 
-samples from:
+  samples from:
   giddster ( https://freesound.org/people/giddster/ )
   AlienXXX ( https://freesound.org/people/AlienXXX/
-The euclid code originates at:
+  The euclid code originates at:
   https://github.com/bastl-instruments/one-chip-modules/blob/master/EUCLID/EUCLID.ino
 
 */
@@ -57,6 +57,86 @@ The euclid code originates at:
 #include <PWMAudio.h>
 #include "io.h"
 #include "euclid.h"
+
+// additions
+#include <Wire.h>
+#include <RotaryEncoder.h>
+//#include <Bounce2.h>
+#include <Adafruit_SSD1306.h>
+
+#include "font.h"
+#define myfont Org_01
+
+
+// begin hardware definitions
+const int dw = 128;
+const int dh = 64;
+
+const int key_pins[] = { 0, 2, 4, 6, 8, 10, 12, 14 };
+const int led_pins[] = { 1, 3, 5, 7, 9, 11, 13, 15 };
+
+const int encoderA_pin = 19;
+const int encoderB_pin = 18;
+const int encoderSW_pin = 28;
+
+const int oled_sda_pin = 20;
+const int oled_scl_pin = 21;
+
+const int oled_i2c_addr = 0x3C;
+
+//Adafruit_SSD1306 display(dw, dh, &Wire, -1);
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+//EncoderButton eb1(19,20,28);
+//Bounce2::Button encoder_switch;
+RotaryEncoder encoder(encoderB_pin, encoderA_pin, RotaryEncoder::LatchMode::FOUR3);
+
+void checkEncoderPosition() {
+  encoder.tick();   // call tick() to check the state.
+}
+
+int encoder_pos_last = 0;
+
+// variables for UI state management
+int encoder_delta = 0;
+uint32_t encoder_push_millis;
+uint32_t step_push_millis;
+//bool steps_pushed[numsteps]; // which keys are pressed
+int step_push = -1;
+bool step_edited = false;
+char seq_info[11];  // 10 chars + nul FIXME
+bool encoder_held = false;
+enum {
+  MODE_PLAY = 0,
+  MODE_CONFIG,
+  MODE_COUNT   // how many modes we got
+};
+int display_mode = MODE_PLAY;
+
+// --- display details from picostep
+//
+typedef struct {
+  int x;
+  int y;
+  const char* str;
+} pos_t;
+
+const char* note_strs[] = { "C ", "C#", "D ", "D# ", "E ", "F ", "F#", "G ", "G#", "A ", "A#", "B ", "C " };
+
+int notenum_to_oct(int notenum) {
+  return (notenum / 12) - 2;
+}
+const char* notenum_to_notestr(int notenum) {
+  return note_strs[notenum % 12];
+}
+// END additions
+
+
+
 
 //#define MONITOR_CPU  // define to monitor Core 2 CPU usage on pin CPU_USE
 
@@ -81,7 +161,7 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
   MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, MIDISerial, MIDI, SerialMIDISettings);
 */
 
-#define NPOTS 3 // number of pots
+#define NPOTS 2 // number of pots
 uint16_t potvalue[NPOTS]; // pot readings
 uint16_t lastpotvalue[NPOTS]; // old pot readings
 bool potlock[NPOTS]; // when pots are locked it means they must change by MIN_POT_CHANGE to register
@@ -221,7 +301,7 @@ struct voice_t {
 //#include "mt40sr88sy1/samples.h"
 //#include "kurzweill/samples.h"
 #include "beatbox/samples.h"
- 
+
 #define NUM_SAMPLES (sizeof(sample)/sizeof(sample_t))
 
 // sample and debounce the keys
@@ -230,8 +310,8 @@ struct voice_t {
 #define SHIFT 8 // index of "shift" USR button 
 uint8_t debouncecnt[NUM_BUTTONS] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; // debounce counters
 bool button[NUM_BUTTONS] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; // key active flags
-int led[NUM_BUTTONS] = {LED0,LED1,LED2,LED3,LED4,LED5,LED6,LED7};
-int buttons[NUM_BUTTONS] = {BUTTON0,BUTTON1,BUTTON2,BUTTON3,BUTTON4,BUTTON5,BUTTON6,BUTTON7};
+int led[8] = {LED0, LED1, LED2, LED3, LED4, LED5, LED6, LED7};
+int buttons[NUM_BUTTONS] = {BUTTON0, BUTTON1, BUTTON2, BUTTON3, BUTTON4, BUTTON5, BUTTON6, BUTTON7, SHIFT};
 
 // scan buttons
 bool scanbuttons(void)
@@ -326,8 +406,30 @@ void setup() {
 
   Serial.begin(115200);
 
-  // Serial.print("Number of Samples ");
-  // Serial.println(NUM_SAMPLES);
+  // Additions
+  // ENCODER
+  pinMode(encoderA_pin, INPUT_PULLUP);
+  pinMode(encoderB_pin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(encoderA_pin), checkEncoderPosition, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(encoderB_pin), checkEncoderPosition, CHANGE);
+  //encoder_switch.attach(encoderSW_pin, INPUT_PULLUP);
+  //encoder_switch.setPressedState(LOW);
+
+  // DISPLAY
+  Wire.setSDA(oled_sda_pin);
+  Wire.setSCL(oled_scl_pin);
+  Wire.begin();
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, oled_i2c_addr)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;) ;  // Don't proceed, loop forever
+  }
+
+  displaySplash();
+  //displayConfig();
+
+
+  // end Additions
 
 #ifdef MONITOR_CPU
   pinMode(CPU_USE, OUTPUT); // for monitoring CPU usage
@@ -345,7 +447,7 @@ void setup() {
 
   pinMode(AIN0, INPUT);
   pinMode(AIN1, INPUT);
-  pinMode(AIN2, INPUT);
+  //pinMode(AIN2, INPUT);
 
   pinMode(LED0, OUTPUT);
   pinMode(LED1, OUTPUT);
@@ -387,20 +489,59 @@ void loop() {
   bool anybuttonpressed;
 
   // UI handler
+
+  // ENCODER update picostepseq
+  //encoder_switch.update();
+  encoder.tick();
+  int encoder_pos = encoder.getPosition();
+  if (encoder_pos != encoder_pos_last) {
+    encoder_delta = encoder_pos - encoder_pos_last;
+    encoder_pos_last = encoder_pos;
+    bpm = bpm + encoder_delta;
+    displayUpdate();
+    display_value(bpm - 50);
+
+  }
+  uint32_t now = millis();
+
+
+  if (encoder_push_millis > 0 ) {
+    if (!step_push_millis && (now - encoder_push_millis) > 1000 && !encoder_delta ) {
+      if ( !encoder_held ) {
+        encoder_held = true;
+        display_mode =  (display_mode + 1) % MODE_COUNT;
+        if ( display_mode == MODE_PLAY ) { // switched back to play mode
+          //configure_sequencer();
+
+        }
+      }
+    }
+    if (step_push_millis > 0) { // we're pushing a step key too
+      if (encoder_push_millis < step_push_millis) {  // and encoder was pushed first
+        strcpy(seq_info, "saveseq");
+      }
+    }
+  }
+
+
+  // END picostepseq
+
+
   anybuttonpressed = false;
-  for (int i = 0; i <= 7; ++i) { // scan all the buttons
+  for (int i = 0; i <= 8; ++i) { // scan all the buttons
     if (button[i]) {
       anybuttonpressed = true;
       if (i == SHIFT) { // shift button is pressed
-        int newbpm = map(potvalue[0], POT_MIN, POT_MAX, 50, 305); // precalculate possible new BPM
-        if (!potlock[0] && (bpm != newbpm)) {
+        int newbpm = map(potvalue[2], POT_MIN, POT_MAX, 50, 305); // precalculate possible new BPM
+        if (!potlock[2] && (bpm != newbpm)) {
           bpm = newbpm; // set BPM
           display_value(bpm - 50); // show BPM Pikocore style
         }
-        if (!potlock[1]) voice[current_track].sampleincrement = (uint16_t)(map(potvalue[1], POT_MIN, POT_MAX, 2048, 8192)); // change sample pitch if pot has moved enough
-        if (!potlock[2]) voice[current_track].level = (int16_t)(map(potvalue[2], POT_MIN, POT_MAX, 0, 1000)); // change sample volume level if pot has moved enough
-      } 
-      /*
+        encoder_held = true;
+        displayUpdate();
+        if (!potlock[0]) voice[current_track].sampleincrement = (uint16_t)(map(potvalue[1], POT_MIN, POT_MAX, 2048, 8192)); // change sample pitch if pot has moved enough
+        //if (!potlock[1]) voice[current_track].level = (int16_t)(map(potvalue[2], POT_MIN, POT_MAX, 0, 1000)); // change sample volume level if pot has moved enough
+      }
       else if ( i == 3 && button[7]) { // use alternate setup for picos without usr button.
         int newbpm = map(potvalue[0], POT_MIN, POT_MAX, 50, 305); // precalculate possible new BPM
         if (!potlock[0] && (bpm != newbpm)) {
@@ -409,8 +550,8 @@ void loop() {
         }
         if (!potlock[1]) voice[current_track].sampleincrement = (uint16_t)(map(potvalue[1], POT_MIN, POT_MAX, 2048, 8192)); // change sample pitch if pot has moved enough
         if (!potlock[2]) voice[current_track].level = (int16_t)(map(potvalue[2], POT_MIN, POT_MAX, 0, 1000)); // change sample volume level if pot has moved enough
-      } */
-      
+      }
+
       else { // a track button is pressed
         current_track = i; // keypress selects track we are working on
         //if ((!potlock[1]) || (!potlock[2])) seq[i].trigger=euclid(16,map(potvalue[1],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS),map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1));
@@ -451,14 +592,15 @@ void loop() {
 
   // reading A/D seems to cause noise in the audio so don't do it too often
   if ((millis() - pot_timer) > POT_SAMPLE_TIME) {
-    readpot(0); 
-    readpot(1); 
+    readpot(0);
+    readpot(1);
     //readpot(2); // sample pots.
     pot_timer = millis();
   }
 
   // if display is not busy show track triggers on leds
   if ((millis() - display_timer) > DISPLAY_TIME) {
+    //displayUpdate();
     for (int i = 0; i <= 7; ++i) { // LED port numbers are sequential on the Pikocore
       if ( seq[i].trigger->getCurrentStep() ) digitalWrite(led[i], 1);
       else digitalWrite(led[i], 0);
@@ -530,4 +672,106 @@ void loop1() {
 #ifdef MONITOR_CPU
   digitalWrite(CPU_USE, 1); // hi = CPU busy
 #endif
+}
+
+
+// ADD
+//
+
+//// {x,y} locations of play screen items
+const int step_text_pos[] = { 0, 15, 16, 15, 32, 15, 48, 15, 64, 15, 80, 15, 96, 15, 112, 15 };
+const pos_t bpm_text_pos    = {.x = 0,  .y = 15, .str = "bpm:%3d" };
+const pos_t trans_text_pos  = {.x = 40, .y = 15, .str = "trs:%+2d" };
+const pos_t seqno_text_pos  = {.x = 80, .y = 15, .str = "seq:%d" };
+const pos_t seq_info_pos    = {.x = 60, .y = 45, .str = "" };
+const pos_t play_text_pos   = {.x = 110, .y = 57, .str = "" };
+
+const pos_t oct_text_offset = { .x = 3, .y = 10,  .str = "" };
+const pos_t gate_bar_offset = { .x = 0, .y = -15, .str = "" };
+const pos_t edit_text_offset = { .x = 3, .y = 22,  .str = "" };
+const int gate_bar_width = 14;
+const int gate_bar_height = 4;
+
+void displayUpdate() {
+  display.clearDisplay();
+  display.setFont(&myfont);
+  display.setTextColor(WHITE, 0);
+  /*
+    for (int i = 0; i < 8; i++) {
+    Step s = seqr.steps[i];
+    const char* nstr = notenum_to_notestr(s.note);
+    int o = notenum_to_oct(s.note);
+    int x = step_text_pos[i * 2], y = step_text_pos[i * 2 + 1];
+    display.setCursor(x, y);
+    display.print(nstr);
+    display.setCursor(x + oct_text_offset.x, y + oct_text_offset.y);
+    display.printf("%1d", o);
+    display.setCursor(x + edit_text_offset.x, y + edit_text_offset.y);
+    display.print((i == selected_step) ? '^' : (s.on) ? ' '
+                                                      : '*');
+    int gate_w = 1 + (s.gate * gate_bar_width / 16);
+    display.fillRect(x + gate_bar_offset.x, y + gate_bar_offset.y, gate_w, gate_bar_height, WHITE);
+    }
+  */
+
+  //display.setFont(&myfont2);
+  /*
+    Serial.print("eb1 incremented by: ");
+    Serial.println(eb.increment());
+    Serial.print("eb1 position is: ");
+    Serial.println(eb.position());
+    Serial.print("eb1 clickCount: ");
+    Serial.println(eb.clickCount());
+  */
+
+  /*
+       const pos_t bpm_text_pos    = {.x=0,  .y=57, .str="bpm:%3d" };
+    const pos_t trans_text_pos  = {.x=55, .y=57, .str="trs:%+2d" };
+    const pos_t seqno_text_pos  = {.x=0,  .y=45, .str="seq:%d" };
+    const pos_t seq_info_pos    = {.x=60, .y=45, .str="" };
+    const pos_t play_text_pos   = {.x=110,.y=57, .str="" };
+  */
+  // bpm
+  display.setCursor(bpm_text_pos.x, bpm_text_pos.y);
+  display.print("bpm: ");
+  display.print(bpm);
+
+  // transpose
+  display.setCursor(trans_text_pos.x, trans_text_pos.y);
+  display.print("shift: ");
+  display.print(encoder_held);
+
+  // seqno
+  display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
+  display.print("delta: ");
+  display.print(encoder_delta);  // user sees 1-8
+
+  // seq info / meta
+  //display.setCursor(seq_info_pos.x, seq_info_pos.y);
+  //display.print(seq_info);
+
+  // play/pause
+  //display.setCursor(play_text_pos.x, play_text_pos.y);
+  //display.print(seqr.playing ? " >" : "[]");
+
+  display.display();
+}
+
+void displaySplash() {
+  display.clearDisplay();
+  display.setFont(&myfont);
+  display.setTextColor(WHITE, 0);
+  display.drawRect(0, 0, dw - 1, dh - 1, WHITE);
+  display.setCursor(25, 32);
+  display.print("PikoBeatBox");
+  display.display();
+  // a little LED dance
+  /*
+    for( int i=0; i<1000; i++) {
+    for( int j=0; j<8; j++) {
+      int v = 30 + 30 * sin( (j*6.2 / 8 ) + i/50.0 ) ;
+      analogWrite( led_pins[j], v);
+    }
+    delay(1);
+    }*/
 }
