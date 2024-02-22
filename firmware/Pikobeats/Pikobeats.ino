@@ -494,10 +494,12 @@ void loop() {
   //encoder_switch.update();
   encoder.tick();
   int encoder_pos = encoder.getPosition();
-  if (encoder_pos != encoder_pos_last) {
+  if ( (encoder_pos != encoder_pos_last )) {
     encoder_delta = encoder_pos - encoder_pos_last;
-    encoder_pos_last = encoder_pos;
-    bpm = bpm + encoder_delta;
+    if (button[8]) {
+
+      bpm = bpm + encoder_delta;
+    }
     displayUpdate();
     display_value(bpm - 50);
 
@@ -530,56 +532,46 @@ void loop() {
   anybuttonpressed = false;
   for (int i = 0; i <= 8; ++i) { // scan all the buttons
     if (button[i]) {
+      //displayUpdate();
       anybuttonpressed = true;
-      if (i == SHIFT) { // shift button is pressed
-        int newbpm = map(potvalue[2], POT_MIN, POT_MAX, 50, 305); // precalculate possible new BPM
-        if (!potlock[2] && (bpm != newbpm)) {
-          bpm = newbpm; // set BPM
-          display_value(bpm - 50); // show BPM Pikocore style
-        }
-        encoder_held = true;
-        displayUpdate();
-        if (!potlock[0]) voice[current_track].sampleincrement = (uint16_t)(map(potvalue[1], POT_MIN, POT_MAX, 2048, 8192)); // change sample pitch if pot has moved enough
-        //if (!potlock[1]) voice[current_track].level = (int16_t)(map(potvalue[2], POT_MIN, POT_MAX, 0, 1000)); // change sample volume level if pot has moved enough
-      }
-      else if ( i == 3 && button[7]) { // use alternate setup for picos without usr button.
-        int newbpm = map(potvalue[0], POT_MIN, POT_MAX, 50, 305); // precalculate possible new BPM
-        if (!potlock[0] && (bpm != newbpm)) {
-          bpm = newbpm; // set BPM
-          display_value(bpm - 50); // show BPM Pikocore style
-        }
-        if (!potlock[1]) voice[current_track].sampleincrement = (uint16_t)(map(potvalue[1], POT_MIN, POT_MAX, 2048, 8192)); // change sample pitch if pot has moved enough
-        if (!potlock[2]) voice[current_track].level = (int16_t)(map(potvalue[2], POT_MIN, POT_MAX, 0, 1000)); // change sample volume level if pot has moved enough
-      }
 
-      else { // a track button is pressed
+        // a track button is pressed
         current_track = i; // keypress selects track we are working on
         //if ((!potlock[1]) || (!potlock[2])) seq[i].trigger=euclid(16,map(potvalue[1],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS),map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1));
-        // set track euclidean triggers if either pot has moved enough
 
+        // look up drum trigger pattern encoder
+        if ( (encoder_pos != encoder_pos_last )) {
+          rp2040.idleOtherCore();
+          int result = voice[i].sample + encoder_delta;
+          if (result >= 0 && result <= NUM_SAMPLES - 1) {
+            voice[i].sample = result;
+          }
+          rp2040.resumeOtherCore();
+        }
+        // change pitch on pot 0
+        if (!potlock[0]) { // change sample if pot has moved enough
+          voice[current_track].sampleincrement = (uint16_t)(map(potvalue[0], POT_MIN, POT_MAX, 2048, 8192)); // change sample pitch if pot has moved enough
+        }
+
+        // set track euclidean triggers if either pot has moved enough
         if (!potlock[1]) {
           seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
           seq[i].trigger->generateSequence(seq[i].fills, 15);
 
           //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
-        } // look up drum trigger pattern
-        if (!potlock[2]) {
+        }
+        /*
+          if (!potlock[2]) {
           seq[i].trigger->setRepeats(map(potvalue[2], POT_MIN, POT_MAX, 0, 32));
           //seq[i].trigger= rightRotate(map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1),seq[i].trigger,16); // rotate trigger pattern
-        }
-
-        if (!potlock[0]) { // change sample if pot has moved enough
-          int16_t newsample = (int16_t) map(potvalue[0], POT_MIN, POT_MAX, 0, NUM_SAMPLES - 1); // precompute new sample
-          if (voice[i].sample != newsample) {
-            rp2040.idleOtherCore(); // don't mess with sample parameters while other core is running
-            //voice[i].sample].sampleindex=sample[voice[i].sample].samplesize; // stop old one if its playing
-            voice[i].sample = newsample;
-            rp2040.resumeOtherCore(); // enable sample processing again
           }
-        }
-      }
+        */
+
     }
   }
+
+  /// only set new pos last after buttons have had a chance to use the delta
+  encoder_pos_last = encoder_pos;
 
   // lock pot settings when no keys are pressed so it requires more movement to change value
   // this is so when we change tracks we don't immediately change the settings on the new track
@@ -739,7 +731,7 @@ void displayUpdate() {
   // transpose
   display.setCursor(trans_text_pos.x, trans_text_pos.y);
   display.print("shift: ");
-  display.print(encoder_held);
+  display.print(button[8]);
 
   // seqno
   display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
@@ -747,8 +739,9 @@ void displayUpdate() {
   display.print(encoder_delta);  // user sees 1-8
 
   // seq info / meta
-  //display.setCursor(seq_info_pos.x, seq_info_pos.y);
-  //display.print(seq_info);
+  display.setCursor(seq_info_pos.x, seq_info_pos.y);
+  display.print("7: ");
+  display.print(button[7]);
 
   // play/pause
   //display.setCursor(play_text_pos.x, play_text_pos.y);
