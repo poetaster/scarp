@@ -15,6 +15,7 @@ public:
 
   void doStep();
   void setRepeats(uint8_t repeats);
+  uint8_t getRepeats();
   void resetSequence();
 
 private:

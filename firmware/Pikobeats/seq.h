@@ -3,6 +3,9 @@
 #define MAX_SEQ_STEPS 16 // up to 16 step sequencer
 #define DEFAULT_SEQ_STEPS 16 // up to 16 step sequencer
 
+// from pikocore
+#define CLOCK_RATE 264000
+
 #define TEMPO    120 // default tempo
 #define PPQN 24  // clocks per quarter note
 #define NOTE_DURATION (PPQN/6) // sixteenth note duration
@@ -32,8 +35,8 @@ struct sequencer {
 
 sequencer seq[NTRACKS] = {
   new euclid(), 4, 2, 0, DEFAULT_SEQ_STEPS - 1, // step index
-  new euclid(), 0, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index
-  new euclid(), 0, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index
+  new euclid(), 3, 1, 0, DEFAULT_SEQ_STEPS - 1, // step index
+  new euclid(), 2, 3, 0, DEFAULT_SEQ_STEPS - 1, // step index
   new euclid(), 0, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index
   new euclid(), 0, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index
   new euclid(), 0, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index

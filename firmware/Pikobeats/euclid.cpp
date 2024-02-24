@@ -68,8 +68,16 @@ bool euclid::getCurrentStep(){
   return euclidianPattern[stepCounter];
 }
 void euclid::setRepeats(uint8_t _repeats){
-  repeats = _repeats;
+  repeats = repeats + _repeats;
+  if (repeats < 0) {
+    repeats = 0;
+  }
 }
+
+uint8_t euclid::getRepeats(){
+  return repeats;
+}
+
 void euclid::doStep(){
   if(stepCounter<(numberOfSteps-1)) { 
     stepCounter++;

@@ -57,7 +57,7 @@
 #include <PWMAudio.h>
 #include "io.h"
 #include "euclid.h"
-
+#include "filter.h"
 // additions
 #include <Wire.h>
 #include <RotaryEncoder.h>
@@ -65,7 +65,8 @@
 #include <Adafruit_SSD1306.h>
 
 #include "font.h"
-#define myfont Org_01
+#include "helvnCB6pt7b.h"
+#define myfont helvnCB6pt7b // Org_01 looks better but is small.
 
 
 // begin hardware definitions
@@ -105,7 +106,6 @@ int encoder_pos_last = 0;
 int encoder_delta = 0;
 uint32_t encoder_push_millis;
 uint32_t step_push_millis;
-//bool steps_pushed[numsteps]; // which keys are pressed
 int step_push = -1;
 bool step_edited = false;
 char seq_info[11];  // 10 chars + nul FIXME
@@ -116,6 +116,7 @@ enum {
   MODE_COUNT   // how many modes we got
 };
 int display_mode = MODE_PLAY;
+uint8_t display_repeats = 0;
 
 // --- display details from picostep
 //
@@ -135,6 +136,10 @@ const char* notenum_to_notestr(int notenum) {
 }
 // END additions
 
+// from pikocore filter
+uint8_t filter_fc = LPF_MAX + 10;
+uint8_t hpf_fc = 0;
+uint8_t filter_q = 0;
 
 
 
@@ -227,50 +232,50 @@ struct voice_t {
   uint16_t sampleincrement; // 1:12 fixed point sample step for pitch changes
   bool isPlaying;  // true when sample is playing
 } voice[NUM_VOICES] = {
-  0,      // default voice 0 assignment - typically a kick but you can map them any way you want
-  850,  // initial level
+  16,      // default voice 0 assignment - typically a kick but you can map them any way you want
+  1000,  // initial level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
   1,      // default voice 1 assignment
-  850,
+  1000,
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  2,    // default voice 2 assignment
-  850, // level
+  4,    // default voice 2 assignment
+  1000, // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
   3,    // default voice 3 assignment
-  850, // level
+  1000, // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  4,    // default voice 4 assignment
-  850,  // level
+  9,    // default voice 4 assignment
+  1000,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  5,    // default voice 5 assignment
-  850,  // level
+  11,    // default voice 5 assignment
+  1000,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  6,    // default voice 6 assignment
-  850,  // level
+  15,    // default voice 6 assignment
+  1000,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
   10,    // default voice 7 assignment
-  850,   // level
+  1000,   // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
@@ -481,98 +486,118 @@ void setup() {
 
 }
 
-
-
-
 // main core handles UI
 void loop() {
   bool anybuttonpressed;
 
-  // UI handler
-
-  // ENCODER update picostepseq
-  //encoder_switch.update();
+  // UI handlers
+  // first encoder
   encoder.tick();
   int encoder_pos = encoder.getPosition();
   if ( (encoder_pos != encoder_pos_last )) {
     encoder_delta = encoder_pos - encoder_pos_last;
-    if (button[8]) {
-
-      bpm = bpm + encoder_delta;
-    }
-    displayUpdate();
-    display_value(bpm - 50);
-
   }
+  // timer 
   uint32_t now = millis();
-
-
+  // set play mode 0 play 1 edit patterns, 3 FX?
   if (encoder_push_millis > 0 ) {
-    if (!step_push_millis && (now - encoder_push_millis) > 1000 && !encoder_delta ) {
+    if ((now - encoder_push_millis) > 25 && ! encoder_delta ) {
       if ( !encoder_held ) {
         encoder_held = true;
-        display_mode =  (display_mode + 1) % MODE_COUNT;
-        if ( display_mode == MODE_PLAY ) { // switched back to play mode
+        if ( display_mode == 0 ) { // switched back to play mode
+          display_mode = 1;
           //configure_sequencer();
-
+        } else {
+          display_mode = 0;
         }
       }
     }
+    
     if (step_push_millis > 0) { // we're pushing a step key too
       if (encoder_push_millis < step_push_millis) {  // and encoder was pushed first
-        strcpy(seq_info, "saveseq");
+        //strcpy(seq_info, "saveseq");
       }
     }
   }
 
-
-  // END picostepseq
-
-
   anybuttonpressed = false;
+  
   for (int i = 0; i <= 8; ++i) { // scan all the buttons
     if (button[i]) {
-      //displayUpdate();
+
       anybuttonpressed = true;
 
-        // a track button is pressed
-        current_track = i; // keypress selects track we are working on
-        //if ((!potlock[1]) || (!potlock[2])) seq[i].trigger=euclid(16,map(potvalue[1],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS),map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1));
-
-        // look up drum trigger pattern encoder
-        if ( (encoder_pos != encoder_pos_last )) {
-          rp2040.idleOtherCore();
-          int result = voice[i].sample + encoder_delta;
-          if (result >= 0 && result <= NUM_SAMPLES - 1) {
-            voice[i].sample = result;
-          }
-          rp2040.resumeOtherCore();
+      // a track button is pressed
+      current_track = i; // keypress selects track we are working on
+      //  if ((!potlock[1]) || (!potlock[2])) seq[i].trigger=euclid(16,map(potvalue[1],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS),map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1));
+      
+      
+      // look up drum trigger pattern encoder play modes
+      if ( (encoder_pos != encoder_pos_last ) && ! button[8] && display_mode == 0) {
+        rp2040.idleOtherCore();
+        int result = voice[i].sample + encoder_delta;
+        if (result >= 0 && result <= NUM_SAMPLES - 1) {
+          voice[i].sample = result;
         }
-        // change pitch on pot 0
-        if (!potlock[0]) { // change sample if pot has moved enough
-          voice[current_track].sampleincrement = (uint16_t)(map(potvalue[0], POT_MIN, POT_MAX, 2048, 8192)); // change sample pitch if pot has moved enough
-        }
+        rp2040.resumeOtherCore();
 
-        // set track euclidean triggers if either pot has moved enough
-        if (!potlock[1]) {
-          seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
-          seq[i].trigger->generateSequence(seq[i].fills, 15);
+      } 
+      
+      if ( (encoder_pos != encoder_pos_last ) && display_mode == 1 ) {
+        //uint8_t re = seq[i].trigger->getRepeats() + encoder_delta;
+        seq[i].trigger->setRepeats(encoder_delta);
+        display_repeats = seq[i].trigger->getRepeats();
 
-          //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
+      }
+
+      // change pitch on pot 0
+      if (!potlock[0] && display_mode == 0 ) { // change sample if pot has moved enough
+        voice[current_track].sampleincrement = (uint16_t)(map(potvalue[0], POT_MIN, POT_MAX, 2048, 8192)); // change sample pitch if pot has moved enough
+      }
+
+      // change volume on pot 1
+      if (!potlock[1] && display_mode == 0){
+        voice[current_track].level = (int16_t)(map(potvalue[1], POT_MIN, POT_MAX, 0, 1000));
+        // change sample volume level if pot has moved enough
+      }
+      if (!potlock[0] && display_mode == 1 ) {
+           filter_fc = potvalue[0] * (LPF_MAX + 10) / 4096;
+      }
+
+      // set track euclidean triggers if either pot has moved enough
+      if (!potlock[1] && ! button[8] && display_mode == 1) {
+        seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
+        seq[i].trigger->generateSequence(seq[i].fills, 15);
+        //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
+      }
+      /*
+        if (!potlock[2]) {
+        seq[i].trigger->setRepeats(map(potvalue[2], POT_MIN, POT_MAX, 0, 32));
+        //seq[i].trigger= rightRotate(map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1),seq[i].trigger,16); // rotate trigger pattern
         }
-        /*
-          if (!potlock[2]) {
-          seq[i].trigger->setRepeats(map(potvalue[2], POT_MIN, POT_MAX, 0, 32));
-          //seq[i].trigger= rightRotate(map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1),seq[i].trigger,16); // rotate trigger pattern
-          }
-        */
+      */
 
     }
+  }
+  // now, after buttons check if only encoder moved and no buttons
+
+  if (! anybuttonpressed && encoder_delta) {
+    bpm = bpm + encoder_delta;
+    displayUpdate();
+    display_value(bpm - 50);
   }
 
   /// only set new pos last after buttons have had a chance to use the delta
   encoder_pos_last = encoder_pos;
+  encoder_delta = 0;  // we own turning, and we've used it
 
+  // start tracking time encoder button held
+  if (button[8]) {
+    encoder_push_millis = now;
+  } else {
+    encoder_push_millis = 0;
+    encoder_held = false;
+  }
   // lock pot settings when no keys are pressed so it requires more movement to change value
   // this is so when we change tracks we don't immediately change the settings on the new track
   if (!anybuttonpressed) lockpots();
@@ -592,7 +617,7 @@ void loop() {
 
   // if display is not busy show track triggers on leds
   if ((millis() - display_timer) > DISPLAY_TIME) {
-    //displayUpdate();
+    displayUpdate();
     for (int i = 0; i <= 7; ++i) { // LED port numbers are sequential on the Pikocore
       if ( seq[i].trigger->getCurrentStep() ) digitalWrite(led[i], 1);
       else digitalWrite(led[i], 0);
@@ -608,7 +633,7 @@ void setup1() {
 
 // second core calculates samples and sends to DAC
 void loop1() {
-  int32_t newsample, samplesum = 0;
+  int32_t newsample, samplesum = 0, filtersum;
   uint32_t index;
   int16_t samp0, samp1, delta, tracksample;
 
@@ -649,11 +674,17 @@ void loop1() {
     }
   }
 
+      
   samplesum = samplesum >> 7; // adjust for play_volume multiply above
   if  (samplesum > 32767) samplesum = 32767; // clip if sample sum is too large
   if  (samplesum < -32767) samplesum = -32767;
-
-
+  
+/*
+    // filter
+  if (filter_fc <=  LPF_MAX) {
+      filtersum = (uint8_t)filter_lpf( (int64_t)samplesum, filter_fc ,filter_q);
+   }
+*/
 
 #ifdef MONITOR_CPU
   digitalWrite(CPU_USE, 0); // low - CPU not busy
@@ -673,10 +704,10 @@ void loop1() {
 //// {x,y} locations of play screen items
 const int step_text_pos[] = { 0, 15, 16, 15, 32, 15, 48, 15, 64, 15, 80, 15, 96, 15, 112, 15 };
 const pos_t bpm_text_pos    = {.x = 0,  .y = 15, .str = "bpm:%3d" };
-const pos_t trans_text_pos  = {.x = 40, .y = 15, .str = "trs:%+2d" };
+const pos_t trans_text_pos  = {.x = 42, .y = 15, .str = "trs:%+2d" };
 const pos_t seqno_text_pos  = {.x = 80, .y = 15, .str = "seq:%d" };
-const pos_t seq_info_pos    = {.x = 60, .y = 45, .str = "" };
-const pos_t play_text_pos   = {.x = 110, .y = 57, .str = "" };
+const pos_t seq_info_pos    = {.x = 0, .y = 35, .str = "" };
+const pos_t play_text_pos   = {.x = 0, .y = 55, .str = "" };
 
 const pos_t oct_text_offset = { .x = 3, .y = 10,  .str = "" };
 const pos_t gate_bar_offset = { .x = 0, .y = -15, .str = "" };
@@ -686,8 +717,8 @@ const int gate_bar_height = 4;
 
 void displayUpdate() {
   display.clearDisplay();
-  display.setFont(&myfont);
-  display.setTextColor(WHITE, 0);
+  //display.setFont(&myfont); don't need to call this every time!
+  //display.setTextColor(WHITE, 0);
   /*
     for (int i = 0; i < 8; i++) {
     Step s = seqr.steps[i];
@@ -706,7 +737,7 @@ void displayUpdate() {
     }
   */
 
-  //display.setFont(&myfont2);
+  // display.setFont(&myfont2);
   /*
     Serial.print("eb1 incremented by: ");
     Serial.println(eb.increment());
@@ -730,8 +761,8 @@ void displayUpdate() {
 
   // transpose
   display.setCursor(trans_text_pos.x, trans_text_pos.y);
-  display.print("shift: ");
-  display.print(button[8]);
+  display.print("flt: ");
+  display.print(filter_fc);
 
   // seqno
   display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
@@ -740,9 +771,12 @@ void displayUpdate() {
 
   // seq info / meta
   display.setCursor(seq_info_pos.x, seq_info_pos.y);
-  display.print("7: ");
-  display.print(button[7]);
-
+  display.print("repeats: ");
+  display.print(display_repeats);
+  // seq info / meta
+  display.setCursor(play_text_pos.x, play_text_pos.y);
+  display.print("mode: ");
+  display.print(display_mode);
   // play/pause
   //display.setCursor(play_text_pos.x, play_text_pos.y);
   //display.print(seqr.playing ? " >" : "[]");
