@@ -4,12 +4,14 @@
 #define DEFAULT_SEQ_STEPS 16 // up to 16 step sequencer
 
 // from pikocore
-#define CLOCK_RATE 264000
+#define CLOCK_RATE 264000?
 
 #define TEMPO    120 // default tempo
-#define PPQN 24  // clocks per quarter note
-#define NOTE_DURATION (PPQN/6) // sixteenth note duration
-#define CLOCKPULSE 15 // duration of clock out pulse
+#define PPQN 24  // clocks per quarter note the POs want 2 pulses per 1/4 note. 
+//#define NOTE_DURATION (PPQN/6) // sixteenth note duration
+#define NOTE_DURATION (2) // use 8th for out to PO boxes? must test others.
+#define CLOCKPULSE 15 // was 15duration of clock out pulse
+
 int16_t bpm = TEMPO;
 int32_t lastMIDIclock; // timestamp of last MIDI clock
 int16_t MIDIclocks = PPQN * 2; // midi clock counter
@@ -65,6 +67,7 @@ void clocktick (long clockperiod) {
 void do_clocks(void) {
   //long clockperiod= (long)(((60.0/(float)bpm)/PPQN)*1000);
   long clockperiod = (long)(((60.0 / (float)bpm) / NOTE_DURATION) * 1000);
+  
   if ((millis() - clocktimer) > clockperiod) {
     clocktimer = millis();
     clocktick(clockperiod);

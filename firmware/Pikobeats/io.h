@@ -65,6 +65,7 @@
 
 
 #define CLOCKOUT 16
+#define CLOCKIN 17
 
 // MIDI serial port pins - not really MIDI but the serial port is exposed on the first two jacks
 #define MIDIRX 17
