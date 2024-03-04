@@ -27,20 +27,11 @@
 
 
   // sample player inspired by Jan Ostman's ESP8266 drum machine http://janostman.wordpress.com
-  // completely rewritten for the Motivation Radio Eurorack module
-  // plays samples in response to gate/trigger inputs and MIDI note on messages
-  // will play any 22khz sample file converted to a header file in the appropriate format
-  // Feb 3/19 - initial version
-  // Feb 11/19 - sped up encoder/trigger ISR so it will catch 1ms pulses from Grids
-  // Jan 2023 - ported code to Pi Pico so I can use it on a 16mb flash version
-  // oct 2023 - ported to Pikocore Hardware and converted to a simple beatbox
-  // Feb 2024 - added step clock out
-  // Feb 2024 - blueprint replaced pattern logic.
-  // Feb 2024 - blueprint add  beatbox kit
 
   samples for beatbox from:
   giddster ( https://freesound.org/people/giddster/ )
   AlienXXX ( https://freesound.org/people/AlienXXX/
+  
   The euclid code originates at:
   https://github.com/bastl-instruments/one-chip-modules/blob/master/EUCLID/EUCLID.ino
 
@@ -72,7 +63,7 @@
 // from pikocore for bpm calcs on clk input
 #include "runningavg.h"
 RunningAverage ra;
-uint16_t clk_display;
+volatile int clk_display;
 uint32_t clk_sync_last;
 
 // clock timer 
@@ -81,9 +72,9 @@ uint32_t clk_sync_last;
 // Can be included as many times as necessary, without `Multiple Definitions` Linker Error
 #include "RPi_Pico_TimerInterrupt.h"
 unsigned int SWPin = CLOCKIN;
-#define TIMER0_INTERVAL_MS        1
+#define TIMER0_INTERVAL_MS       1
 #define DEBOUNCING_INTERVAL_MS   80
-#define LOCAL_DEBUG               1
+#define LOCAL_DEBUG              1
 // Init RPI_PICO_Timer, can use any from 0-15 pseudo-hardware timers
 RPI_PICO_Timer ITimer0(0);
 volatile unsigned long rotationTime = 0;
@@ -101,20 +92,18 @@ uint32_t clk_sync_ms = 0;
 
 bool TimerHandler0(struct repeating_timer *t)
 {  
-  (void) t;
-  //if ( digitalRead(SWPin) && (debounceCounter >= DEBOUNCING_INTERVAL_MS / TIMER0_INTERVAL_MS ) )
-  
+  (void) t;  
   if( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin) && debounceCounter >= DEBOUNCING_INTERVAL_MS)
   {
-    
     //min time between pulses has passed
+    // calculate bpm
     RPM = (float) ( 60000.0f / ( rotationTime * TIMER0_INTERVAL_MS ) / 2.0f );
-    //avgRPM = ( 2 * avgRPM + RPM) / 3,
-    ra.Update(RPM);
-    clk_display = ra.Value();
+    //use running avg NOT volatile on timer
+    //ra.Update(RPM);
+    clk_display = RPM;
 #if (TIMER_INTERRUPT_DEBUG > 0)
       Serial.print("rt = "); Serial.print(RPM);
-      Serial.print("RPM = "); Serial.print(ra.Value());
+      //Serial.print("RPM = "); Serial.print(ra.Value());
       Serial.print(", rotationTime ms = "); Serial.println(rotationTime * TIMER0_INTERVAL_MS);
 #endif
     rotationTime = 0;
@@ -124,7 +113,7 @@ bool TimerHandler0(struct repeating_timer *t)
   {
     debounceCounter++;
   }
-  if (rotationTime >= 5000)
+  if (rotationTime >= 1000)
   {
     // If idle, set RPM to 0, don't increase rotationTime
     RPM = 0;
@@ -568,7 +557,7 @@ void setup() {
     MIDI.begin(MIDI_CHANNEL_OMNI);
   */
   // set up runningavg
-  ra.Init(15);
+  ra.Init(5);
   //seq[0].trigger=0b1000100010001000;
   seq[0].trigger->generateSequence(4, 16);
   display_value(NUM_SAMPLES); // show number of samples on the display
@@ -583,46 +572,7 @@ void loop() {
   // timer
   uint32_t now = millis();
 
-  // check if we have a new bpm value from interrupt
-  // since debouncing is flaky, force more than 1 bpm diff
-  if (RPM > bpm + 1 || RPM < bpm -1) {
-        clocktimer = 0; //reset seq
-        bpm = RPM;
-  }
-  /*
-   * This does not perform 
-   * either PIO or interrupt
-  clk_state = digitalRead(CLOCKIN);
-    
-  if (clk_state != clk_state_last) {
-    if (clk_state == HIGH) {
-      clk_hits++;
-      clk_sync_ms = now - clk_sync_last;
-      clk_sync_last = now;
-      //ra.Update(clk_sync_ms);
-      //clocktimer = 0;
-      //clk_display = clk_sync_ms; //ra.Value();
-      digitalWrite(LED_BUILTIN, HIGH);
-      uint16_t bpm_new = 60000 / clk_sync_ms / 2;
-      clk_display = clk_sync_ms;
 
-      if (bpm_new != bpm) {
-        clocktimer = 0; //reset seq
-        bpm = bpm_new;
-      }
-    } else {
-      clk_sync_ms = 0;
-      digitalWrite(LED_BUILTIN, LOW);
-    }
-    if (clk_hits > 15) {
-      clk_hits = 0;
-    }
-  }
-  clk_state_last = clk_state;
-  */
-
-
-  
   // UI handlers
   // first encoder
   encoder.tick();
@@ -738,8 +688,7 @@ void loop() {
   if (!anybuttonpressed) lockpots();
 
   // MIDI.read();  // do serial MIDI
-
-  do_clocks();  // process sequencer clocks
+  
   scanbuttons();
 
   // reading A/D seems to cause noise in the audio so don't do it too often
@@ -767,6 +716,16 @@ void setup1() {
 
 // second core calculates samples and sends to DAC
 void loop1() {
+
+  // check if we have a new bpm value from interrupt
+  // since debouncing is flaky, force more than 1 bpm diff
+    //if (ra.Value() != bpm && ra.Value() > 49) {
+  if (RPM > bpm + 1 || RPM < bpm -1 && RPM > 49) {
+        reset = true; //reset seq
+        bpm = RPM;
+  }
+  do_clocks();  // process sequencer clocks
+  
 
   int32_t newsample, samplesum = 0, filtersum;
   uint32_t index;
