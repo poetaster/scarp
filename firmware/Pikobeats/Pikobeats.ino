@@ -89,6 +89,8 @@ volatile int clk_state_last; // track the CLOCKIN pin state.
 int clk_state = 0;
 int clk_hits = 0;
 uint32_t clk_sync_ms = 0;
+bool sync = false; // used to detect if we have input sync
+
 
 bool TimerHandler0(struct repeating_timer *t)
 {  
@@ -101,6 +103,9 @@ bool TimerHandler0(struct repeating_timer *t)
     //use running avg NOT volatile on timer
     //ra.Update(RPM);
     clk_display = RPM;
+    // these are for the sequencer
+    sync = true;
+
 #if (TIMER_INTERRUPT_DEBUG > 0)
       Serial.print("rt = "); Serial.print(RPM);
       //Serial.print("RPM = "); Serial.print(ra.Value());
@@ -116,6 +121,8 @@ bool TimerHandler0(struct repeating_timer *t)
   if (rotationTime >= 1000)
   {
     // If idle, set RPM to 0, don't increase rotationTime
+    sync = false ;// flag for seq.h
+
     RPM = 0;
 #if (TIMER_INTERRUPT_DEBUG > 0)   
     Serial.print("RPM = "); Serial.print(RPM); Serial.print(", rotationTime = "); Serial.println(rotationTime);
@@ -721,7 +728,7 @@ void loop1() {
   // since debouncing is flaky, force more than 1 bpm diff
     //if (ra.Value() != bpm && ra.Value() > 49) {
   if (RPM > bpm + 1 || RPM < bpm -1 && RPM > 49) {
-        reset = true; //reset seq
+        //reset = true; //reset seq
         bpm = RPM;
   }
   do_clocks();  // process sequencer clocks

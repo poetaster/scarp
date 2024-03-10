@@ -88,6 +88,7 @@ void euclid::doStep(){
     if (repeatCounter > repeats) {
       rotate(4);
       repeatCounter = 0;
+      reset = true;
     }
   }
 }

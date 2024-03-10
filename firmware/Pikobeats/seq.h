@@ -8,8 +8,7 @@
 
 #define TEMPO    120 // default tempo
 #define PPQN 24  // clocks per quarter note the POs want 2 pulses per 1/4 note. 
-//#define NOTE_DURATION (PPQN/6) // sixteenth note duration
-#define NOTE_DURATION (2) // use 8th for out to PO boxes? must test others.
+#define NOTE_DURATION (PPQN/12) // sixteenth note duration
 #define CLOCKPULSE 15 // was 15duration of clock out pulse
 
 int16_t bpm = TEMPO;
@@ -19,6 +18,7 @@ int16_t MIDIsync = 16;  // number of clocks required to sync BPM
 int16_t useMIDIclock = 0; // true if we are using MIDI clock
 long clocktimer = 0; // clock rate in ms
 bool reset = false; // used to reset bpm from CLOCKIN interrupt
+
 
 // all of the sequencers use the same data structure even though the data may be different in each case
 // this simplifies the code somewhat
