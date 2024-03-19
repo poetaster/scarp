@@ -384,8 +384,8 @@ struct voice_t {
 //#include "Trashrez/samples.h"
 //#include "world/samples.h"
 //#include "mt40sr88sy1/samples.h"
-//#include "kurzweill/samples.h"
-#include "beatbox/samples.h"
+#include "kurzweill/samples.h"
+//#include "beatbox/samples.h"
 
 #define NUM_SAMPLES (sizeof(sample)/sizeof(sample_t))
 
