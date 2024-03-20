@@ -37,7 +37,6 @@
 #include <samples/bamboo/bamboo_08_2048_int8.h> // wavetable data
 #include <samples/bamboo/bamboo_09_2048_int8.h> // wavetable data
 #include <samples/bamboo/bamboo_10_2048_int8.h> // wavetable data
-#include "beatbox/Bass_001.h" // wavetable data
 
 // for scheduling samples to play
 EventDelay kTriggerDelay;
@@ -52,7 +51,6 @@ const byte NUM_TABLES = 11;
   Sample <BAMBOO_00_2048_NUM_CELLS, AUDIO_RATE> (BAMBOO_00_2048_DATA),
   Sample <BAMBOO_01_2048_NUM_CELLS, AUDIO_RATE> (BAMBOO_01_2048_DATA),
   Sample <BAMBOO_02_2048_NUM_CELLS, AUDIO_RATE> (BAMBOO_02_2048_DATA),
-  Sample <BASS_00_2678_NUM_CELLS, AUDIO_RATE> (BASS_00_2678_DATA),
 };
 
 // watch out - tables are const (but you can choose which ones you reference)
@@ -68,7 +66,6 @@ const int8_t * tables[NUM_TABLES] ={
   BAMBOO_08_2048_DATA,
   BAMBOO_09_2048_DATA,
   BAMBOO_10_2048_DATA,
-  BASS_00_2678_DATA
 };
 
 // gains for each sample player
