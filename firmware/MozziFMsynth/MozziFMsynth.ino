@@ -88,7 +88,6 @@ AutoMap kMapModSpeed(0,4096,10,10000);
 const int encoderA_pin = 19;
 const int encoderB_pin = 18;
 const int encoderSW_pin = 28;
-
 const int oled_sda_pin = 20;
 const int oled_scl_pin = 21;
 

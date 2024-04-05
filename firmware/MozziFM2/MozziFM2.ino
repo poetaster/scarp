@@ -221,7 +221,7 @@ uint16_t durationIn = 200; // up to 384
 uint16_t modIn = 200; // up to 2800
 uint16_t modC = 0;
 int pressedB;
-int RATE_value = 50 ; //was and adc in kevin's orig
+int RATE_value = 500 ; //was and adc in kevin's orig
 
 #define DISPLAY_TIME 2000 // time in ms to display numbers on LEDS
 int32_t display_timer;
@@ -264,7 +264,7 @@ float freqs[12] = { 261.63f, 277.18f, 293.66f, 311.13f, 329.63f, 349.23f, 369.99
 
 MIDI_CREATE_DEFAULT_INSTANCE();
 
-AutoMap kMapIntensity(0, 4095, 10, 700);
+AutoMap kMapIntensity(0, 4095, 10, 800);
 AutoMap kMapModSpeed(0, 4095, 10, 10000);
 
 
@@ -401,8 +401,8 @@ void updateControl() {
 
   //int RATE_value = mozziAnalogRead(RATE_PIN); // value is 0 - 4095
   // use a float here for low frequencies
-  float mod_speed = (float)kMapModSpeed(RATE_value) / 1000;
-
+  //float mod_speed = (float)kMapModSpeed(RATE_value) / 10;
+  float mod_speed = (float) RATE_value ;
   kIntensityMod.setFreq(mod_speed);
 }
 
@@ -475,6 +475,11 @@ void loop1() {
         }
         noteA = freqs[i];
         aNoteOn( freqs[i], 100 );
+      } 
+      if (encoder_delta !=
+      0 && i < 2) {
+         RATE_value = RATE_value + encoder_delta;
+         display_value(RATE_value - 50); // this is wrong, bro :)
       }
       pressedB = i;
       //  if ((!potlock[1]) || (!potlock[2])) seq[i].trigger=euclid(16,map(potvalue[1],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS),map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1));
@@ -532,6 +537,7 @@ void loop1() {
   }
 
   // now, after buttons check if only encoder moved and no buttons
+  // this is broken by mozzi, sigh.
   if (! anybuttonpressed && encoder_delta) {
     //bpm = bpm + encoder_delta;
     RATE_value = RATE_value + encoder_delta;
@@ -600,8 +606,8 @@ void displayUpdate() {
   */
   // bpm
   display.setCursor(bpm_text_pos.x, bpm_text_pos.y);
-  display.print("A: ");
-  display.print(noteA);
+  display.print("r: ");
+  display.print(RATE_value);
 
   // transpose
   display.setCursor(trans_text_pos.x, trans_text_pos.y);

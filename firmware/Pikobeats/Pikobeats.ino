@@ -312,49 +312,49 @@ struct voice_t {
   uint16_t sampleincrement; // 1:12 fixed point sample step for pitch changes
   bool isPlaying;  // true when sample is playing
 } voice[NUM_VOICES] = {
-  16,      // default voice 0 assignment - typically a kick but you can map them any way you want
+  0,      // default voice 0 assignment - typically a kick but you can map them any way you want
   1000,  // initial level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  1,      // default voice 1 assignment
+  6,      // default voice 1 assignment
   1000,
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  4,    // default voice 2 assignment
+  29,    // default voice 2 assignment
   1000, // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  3,    // default voice 3 assignment
+  30,    // default voice 3 assignment
   1000, // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  9,    // default voice 4 assignment
+  37,    // default voice 4 assignment
   1000,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  11,    // default voice 5 assignment
+  39,    // default voice 5 assignment
   1000,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  15,    // default voice 6 assignment
+  43,    // default voice 6 assignment
   1000,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  10,    // default voice 7 assignment
+  47,    // default voice 7 assignment
   1000,   // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
@@ -375,7 +375,7 @@ struct voice_t {
 // wave2header also creates "samples.h" which #includes all the generated header files
 
 
-//#include "808samples/samples.h" // 808 sounds
+#include "808samples/samples.h" // 808 sounds
 //#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
 //#include "Angular_Techno_Set/samples.h"   // Techno
 //#include "Acoustic3/samples.h"   // acoustic drums
@@ -384,7 +384,7 @@ struct voice_t {
 //#include "Trashrez/samples.h"
 //#include "world/samples.h"
 //#include "mt40sr88sy1/samples.h"
-#include "kurzweill/samples.h"
+//#include "kurzweill/samples.h"
 //#include "beatbox/samples.h"
 
 #define NUM_SAMPLES (sizeof(sample)/sizeof(sample_t))
@@ -548,7 +548,10 @@ void setup() {
 
   pinMode(CLOCKOUT, OUTPUT);
   pinMode(CLOCKIN, INPUT_PULLUP);
-
+  
+  pinMode(23, OUTPUT); // thi is to switch to PWM for power to avoid ripple noise
+  digitalWrite(23, HIGH);
+  
   // set up Pico PWM audio output
   DAC.setBuffers(4, 128); // DMA buffers
   DAC.begin(SAMPLERATE);
