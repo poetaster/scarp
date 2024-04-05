@@ -2,7 +2,7 @@
   (c) 2024 blueprint@poetaster.de
   GPLv3
 
-  BASED ON
+  BASED in part on
   Arduino Mozzi MIDI FM Synthesis 2
   https://diyelectromusic.wordpress.com/2020/08/19/arduino-fm-midi-synthesis-with-mozzi-part-2/
 
@@ -16,9 +16,8 @@
   Much of this code is based on the Mozzi example Knob_LightLevel_x2_FMsynth (C) Tim Barrass
 */
 #define AUDIO_CHANNEL_1_PIN 22
-#define AUDIO_CHANNEL_2_PIN 16
 #define MOZZI_AUDIO_PIN_1 22
-#define MOZZI_AUDIO_PIN_2 16
+
 // button inputs
 #define BUTTON0  0 // key1 input on schematic
 #define BUTTON1  2
@@ -259,8 +258,6 @@ const int gate_bar_height = 4;
 bool debugging = true;
 float freqs[12] = { 261.63f, 277.18f, 293.66f, 311.13f, 329.63f, 349.23f, 369.99f, 392.00f, 415.30f, 440.00f, 466.16f, 493.88f};
 
-// from here on, kevin's original - midi + button frequencies, etc.
-
 
 MIDI_CREATE_DEFAULT_INSTANCE();
 
@@ -338,7 +335,11 @@ void setup() {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;) ;  // Don't proceed, loop forever
   }
+  envelope.setADLevels(255, 200);
+  envelope.setTimes(50, 200, 1000, 200); // 10000 is so the note will sustain 10 seconds unless a noteOff comes
 
+  startMozzi();
+  
   displaySplash();
   pinMode(BUTTON0, INPUT_PULLUP);
   pinMode(BUTTON1, INPUT_PULLUP);
@@ -363,16 +364,17 @@ void setup() {
   pinMode(LED7, OUTPUT);
 
   pinMode(LED, OUTPUT);
+  
+  pinMode(23, OUTPUT); // thi is to switch to PWM for power to avoid ripple noise
+  digitalWrite(23, HIGH);
 
+  
   // Connect the HandleNoteOn function to the library, so it is called upon reception of a NoteOn.
   //MIDI.setHandleNoteOn(HandleNoteOn);  // Put only the name of the function
   //MIDI.setHandleNoteOff(HandleNoteOff);  // Put only the name of the function
   //MIDI.begin(MIDI_CHANNEL_OMNI);
 
-  envelope.setADLevels(255, 200);
-  envelope.setTimes(50, 200, 1000, 200); // 10000 is so the note will sustain 10 seconds unless a noteOff comes
 
-  startMozzi();
 }
 
 void setFreqs() {
@@ -417,7 +419,6 @@ void loop() {
   audioHook();
 }
 
-// second core setup
 // second core dedicated to display foo
 
 void setup1() {
@@ -468,22 +469,25 @@ void loop1() {
       
       // a track button is pressed
       current_track = i; // keypress selects track we are working on
-      if ( encoder_delta == 0 && i > 1) {
-        if (pressedB != i) {
+      
+      if ( encoder_delta == 0) {
+        //if (pressedB != i) {
           // turn off the last note
-          aNoteOff(freqs[pressedB],0);
-        }
+          //aNoteOff(freqs[pressedB],0);
+        //}
+        aNoteOff(freqs[pressedB],0);
         noteA = freqs[i];
         aNoteOn( freqs[i], 100 );
       } 
-      if (encoder_delta !=
-      0 && i < 2) {
+      if (encoder_delta != 0 && i < 2) {
          RATE_value = RATE_value + encoder_delta;
          display_value(RATE_value - 50); // this is wrong, bro :)
       }
       pressedB = i;
+      
       //  if ((!potlock[1]) || (!potlock[2])) seq[i].trigger=euclid(16,map(potvalue[1],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS),map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1));
       // look up drum trigger pattern encoder play modes
+      
       if ( i == 2 && encoder_delta != 0 ) {
         attackIn += encoder_delta * 5;
         envelope.setAttackTime(attackIn);
