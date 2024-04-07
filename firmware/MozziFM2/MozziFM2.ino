@@ -41,6 +41,7 @@
 
 // just in case
 #define ARDUINO_ARCH_RP2040 1
+
 #include <MIDI.h>
 #include <Mozzi.h>
 #include <Oscil.h> // oscillator
@@ -50,6 +51,7 @@
 #include <AutoMap.h> // maps unpredictable inputs to a range
 #include <ADSR.h>
 #include <Wire.h>
+
 #include <RotaryEncoder.h>
 //#include <Bounce2.h>
 #include <Adafruit_SSD1306.h>
@@ -195,13 +197,13 @@ bool scanbuttons(void)
     }
 
     if (pressed) {
-      //if (debouncecnt[i] <= 3) ++debouncecnt[i];
-      //if (debouncecnt[i] == 2) { // trigger on second sample of key active
-      button[i] = 1;
-      //}
+      if (debouncecnt[i] <= 3) ++debouncecnt[i];
+      if (debouncecnt[i] == 2) { // trigger on second sample of key active
+        button[i] = 1;
+      }
     }
     else {
-      //debouncecnt[i] = 0;
+      debouncecnt[i] = 0;
       button[i] = 0;
     }
   }
@@ -220,7 +222,7 @@ uint16_t durationIn = 200; // up to 384
 uint16_t modIn = 200; // up to 2800
 uint16_t modC = 0;
 int pressedB;
-int RATE_value = 500 ; //was and adc in kevin's orig
+int RATE_value = 1 ; //was an adc in kevin's orig
 
 #define DISPLAY_TIME 2000 // time in ms to display numbers on LEDS
 int32_t display_timer;
@@ -341,6 +343,7 @@ void setup() {
   startMozzi();
   
   displaySplash();
+  
   pinMode(BUTTON0, INPUT_PULLUP);
   pinMode(BUTTON1, INPUT_PULLUP);
   pinMode(BUTTON2, INPUT_PULLUP);
@@ -403,8 +406,9 @@ void updateControl() {
 
   //int RATE_value = mozziAnalogRead(RATE_PIN); // value is 0 - 4095
   // use a float here for low frequencies
-  //float mod_speed = (float)kMapModSpeed(RATE_value) / 10;
-  float mod_speed = (float) RATE_value ;
+  float mod_speed = (float)kMapModSpeed(RATE_value) / 10;
+  
+  //float mod_speed = (float) RATE_value ;
   kIntensityMod.setFreq(mod_speed);
 }
 
@@ -429,7 +433,7 @@ void setup1() {
 void loop1() {
   uint32_t now = millis();
   bool anybuttonpressed;
-
+  anybuttonpressed = false;
 
   // UI handlers
   // first encoder
@@ -459,13 +463,13 @@ void loop1() {
     }
   }
 
-  anybuttonpressed = false;
+  
 
-  for (int i = 0; i <= 8; ++i) { // scan all the buttons
+  for (int i = 0; i < 9; ++i) { // scan all the buttons
     if (button[i]) {
-      
+
       anybuttonpressed = true;
-      digitalWrite(led[i] , HIGH);
+      if (i < 8)  digitalWrite(led[i] , HIGH);
       
       // a track button is pressed
       current_track = i; // keypress selects track we are working on
@@ -479,10 +483,6 @@ void loop1() {
         noteA = freqs[i];
         aNoteOn( freqs[i], 100 );
       } 
-      if (encoder_delta != 0 && i < 2) {
-         RATE_value = RATE_value + encoder_delta;
-         display_value(RATE_value - 50); // this is wrong, bro :)
-      }
       pressedB = i;
       
       //  if ((!potlock[1]) || (!potlock[2])) seq[i].trigger=euclid(16,map(potvalue[1],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS),map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1));
@@ -497,7 +497,7 @@ void loop1() {
         durationIn += encoder_delta * 5;
         envelope.setDecayTime(durationIn);
         //durationIn= constrain(durationIn, 16, 380);
-        pressedB = 1;
+        //pressedB = 1;
       }
       if ( i == 4 && encoder_delta != 0) {
         modIn += encoder_delta * 10;
@@ -536,7 +536,7 @@ void loop1() {
       }
 
     } else {
-      digitalWrite(led[i] , LOW); // else the button is off.
+      if (i < 8) digitalWrite(led[i] , LOW); // else the button is off.
     }
   }
 
@@ -545,7 +545,7 @@ void loop1() {
   if (! anybuttonpressed && encoder_delta) {
     //bpm = bpm + encoder_delta;
     RATE_value = RATE_value + encoder_delta;
-    display_value(RATE_value - 50); // this is wrong, bro :)
+    //display_value(RATE_value - 50); // this is wrong, bro :)
   }
 
 
