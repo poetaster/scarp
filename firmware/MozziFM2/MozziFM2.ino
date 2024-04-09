@@ -412,8 +412,7 @@ void updateControl() {
   kIntensityMod.setFreq(mod_speed);
 }
 
-
-int updateAudio() {
+AudioOutput_t  updateAudio() {
   long modulation = aSmoothIntensity.next(fm_intensity) * aModulator.next();
   return (int)((envelope.next() * aCarrier.phMod(modulation)) >> 8);
 }
