@@ -54,7 +54,26 @@
 #include <Wire.h>
 #include <RotaryEncoder.h>
 //#include <Bounce2.h>
-#include <Adafruit_SSD1306.h>
+
+
+
+// display setup works with adafruit SSD1306 or SH1106G
+const int dw = 128;
+const int dh = 64;
+const int oled_sda_pin = 20;
+const int oled_scl_pin = 21;
+const int oled_i2c_addr = 0x3C;
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+
+//#include <Adafruit_SSD1306.h>
+//Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
+//#define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+//Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
+
+#include <Adafruit_SH110X.h>
+Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, &Wire);
+#define WHITE SH110X_WHITE
 
 #include "font.h"
 #include "helvnCB6pt7b.h"
@@ -145,17 +164,6 @@ const int encoderA_pin = 19;
 const int encoderB_pin = 18;
 const int encoderSW_pin = 28;
 
-const int oled_sda_pin = 20;
-const int oled_scl_pin = 21;
-
-const int oled_i2c_addr = 0x3C;
-
-//Adafruit_SSD1306 display(dw, dh, &Wire, -1);
-const int dw = 128;
-const int dh = 64;
-#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
 
 // encoder
 RotaryEncoder encoder(encoderB_pin, encoderA_pin, RotaryEncoder::LatchMode::FOUR3);
@@ -303,7 +311,7 @@ uint16_t readpot(uint8_t potnum) {
 
 // we have 8 voices that can play any sample when triggered
 // this structure holds the settings for each voice
-
+// these selections are for the Angular Jungle set
 #define NUM_VOICES 8
 struct voice_t {
   int16_t sample;   // index of the sample structure in sampledefs.h
@@ -318,43 +326,43 @@ struct voice_t {
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  6,      // default voice 1 assignment
+  7,      // default voice 1 assignment
   1000,
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  29,    // default voice 2 assignment
+  2,    // default voice 2 assignment
   1000, // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  30,    // default voice 3 assignment
+  3,    // default voice 3 assignment
   1000, // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  37,    // default voice 4 assignment
+  4,    // default voice 4 assignment
   1000,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  39,    // default voice 5 assignment
+  35,    // default voice 5 assignment
   1000,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  43,    // default voice 6 assignment
+  21,    // default voice 6 assignment
   1000,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  47,    // default voice 7 assignment
+  10,    // default voice 7 assignment
   1000,   // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
@@ -375,8 +383,8 @@ struct voice_t {
 // wave2header also creates "samples.h" which #includes all the generated header files
 
 
-#include "808samples/samples.h" // 808 sounds
-//#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
+//#include "808samples/samples.h" // 808 sounds
+#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
 //#include "Angular_Techno_Set/samples.h"   // Techno
 //#include "Acoustic3/samples.h"   // acoustic drums
 //#include "Pico_kit/samples.h"   // assorted samples
@@ -459,6 +467,7 @@ bool scanbuttons(void)
 */
 
 // include here to avoid forward references - I'm lazy :)
+
 #include "seq.h"
 
 #define DISPLAY_TIME 2000 // time in ms to display numbers on LEDS
@@ -505,12 +514,13 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(encoderA_pin), checkEncoderPosition, CHANGE);
   attachInterrupt(digitalPinToInterrupt(encoderB_pin), checkEncoderPosition, CHANGE);
 
-  // DISPLAY
+  // DISPLAY need to tell Wire which pins for i2c
   Wire.setSDA(oled_sda_pin);
   Wire.setSCL(oled_scl_pin);
   Wire.begin();
 
-  if (!display.begin(SSD1306_SWITCHCAPVCC, oled_i2c_addr)) {
+  // SSD1306 -- if (!display.begin(SSD1306_SWITCHCAPVCC, oled_i2c_addr)) {
+   if (!display.begin( oled_i2c_addr)) {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;) ;  // Don't proceed, loop forever
   }
@@ -568,7 +578,7 @@ void setup() {
   */
   // set up runningavg
   ra.Init(5);
-  //seq[0].trigger=0b1000100010001000;
+  
   seq[0].trigger->generateSequence(4, 16);
   display_value(NUM_SAMPLES); // show number of samples on the display
 
@@ -592,17 +602,15 @@ void loop() {
   }
 
 
-
   // set play mode 0 play 1 edit patterns, 3 FX?
   if (encoder_push_millis > 0 ) {
     if ((now - encoder_push_millis) > 25 && ! encoder_delta ) {
       if ( !encoder_held ) {
         encoder_held = true;
-        if ( display_mode == 0 ) { // switched back to play mode
-          display_mode = 1;
-          //configure_sequencer();
-        } else {
+        display_mode = display_mode+1;
+        if ( display_mode > 2) { // switched back to play mode
           display_mode = 0;
+          //configure_sequencer();
         }
       }
     }
@@ -663,6 +671,11 @@ void loop() {
         seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateSequence(seq[i].fills, 15);
         //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
+      }
+
+      if ( display_mode == 2 && i < 8 && ! voice[current_track].isPlaying) {
+         voice[current_track].sampleindex = 0; // trigger sample for this track
+         voice[current_track].isPlaying = true;
       }
       /*
         if (!potlock[2]) {
