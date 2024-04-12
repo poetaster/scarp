@@ -672,8 +672,8 @@ void loop() {
         seq[i].trigger->generateSequence(seq[i].fills, 15);
         //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
       }
-
-      if ( display_mode == 2 && i < 8 && ! voice[current_track].isPlaying) {
+      //trig/retrig play
+      if ( display_mode == 2 && i < 8 && ! voice[current_track].sampleindex < 100 ) {
          voice[current_track].sampleindex = 0; // trigger sample for this track
          voice[current_track].isPlaying = true;
       }
