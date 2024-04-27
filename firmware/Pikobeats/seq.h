@@ -28,10 +28,10 @@ bool reset = false; // used to reset bpm from CLOCKIN interrupt
 
 struct sequencer {
   public: euclid *trigger;  // euclid object to manage hits and patterns from bastl
-    uint16_t fills;   // how many hits in 16
-    uint16_t repeats;   // set in euclid doStep for now, how often to repeat pattern before new
-    uint8_t  count;  // not used, see euclid doStep
-    int16_t index;    // index of step we are on
+  uint16_t fills;   // how many hits in 16
+  uint16_t repeats;   // set in euclid doStep for now, how often to repeat pattern before new
+  uint8_t  count;  // not used, see euclid doStep
+  int16_t index;    // index of step we are on
 };
 
 

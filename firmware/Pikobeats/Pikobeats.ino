@@ -77,7 +77,8 @@ Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
 
 #include "font.h"
 #include "helvnCB6pt7b.h"
-#define myfont helvnCB6pt7b // Org_01 looks better but is small.
+#define myfont Org_01 //helvnCB6pt7b // Org_01 looks better but is small.
+#define bigfont helvnCB6pt7b
 
 // from pikocore for bpm calcs on clk input
 #include "runningavg.h"
@@ -315,8 +316,9 @@ uint16_t readpot(uint8_t potnum) {
 
 // we have 8 voices that can play any sample when triggered
 // this structure holds the settings for each voice
-// these selections are for the Angular Jungle set
+
 #define NUM_VOICES 8
+
 struct voice_t {
   int16_t sample;   // index of the sample structure in sampledefs.h
   int16_t level;   // 0-1000 for legacy reasons
@@ -325,49 +327,49 @@ struct voice_t {
   bool isPlaying;  // true when sample is playing
 } voice[NUM_VOICES] = {
   0,      // default voice 0 assignment - typically a kick but you can map them any way you want
-  1000,  // initial level
+  900,  // initial level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  7,      // default voice 1 assignment
-  1000,
+  1,      // default voice 1 assignment 7 is 'boom' 36 is fun these are angular assignments
+  900,
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  2,    // default voice 2 assignment
-  1000, // level
+  12,    // default voice 2 assignment was 2, 29 36, 37 is funny
+  900, // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  3,    // default voice 3 assignment
-  1000, // level
+  8,    // default voice 3 assignment 28
+  900, // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  4,    // default voice 4 assignment
-  1000,  // level
+  5,    // default voice 4  10 is an 808 wood block assignment 31 here? 4
+  900,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  35,    // default voice 5 assignment
-  1000,  // level
+  6,    // default voice 5 assignment 35
+  900,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  21,    // default voice 6 assignment
-  1000,  // level
+  7,    // default voice 6 assignment 13, 14 open hat, 23 tight snare, 33 clave? or sidestick
+  900,  // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
 
-  10,    // default voice 7 assignment
-  1000,   // level
+  13,    // default voice 7 assignment 10 
+  900,   // level
   0,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
@@ -386,9 +388,10 @@ struct voice_t {
 // sampledefs.h contains other information not used by this program e.g. the name of the sample file - I wrote it for another project
 // wave2header also creates "samples.h" which #includes all the generated header files
 
-
+//#include "808/samples.h" // 808 sounds
+#include "Jungle/samples.h"
 //#include "808samples/samples.h" // 808 sounds
-#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
+//#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
 //#include "Angular_Techno_Set/samples.h"   // Techno
 //#include "Acoustic3/samples.h"   // acoustic drums
 //#include "Pico_kit/samples.h"   // assorted samples
@@ -584,7 +587,7 @@ void setup() {
   // set up runningavg
   ra.Init(5);
   
-  seq[0].trigger->generateSequence(4, 16);
+  seq[0].trigger->generateRandomSequence(8, 16);
   display_value(NUM_SAMPLES); // show number of samples on the display
 
 }
@@ -658,7 +661,7 @@ void loop() {
       }
 
       // change pitch on pot 0
-      if (!potlock[0] && display_mode == 0 ) { // change sample if pot has moved enough
+      if (!potlock[0] && ( display_mode == 0 || display_mode ==2) ){ // change sample if pot has moved enough
         uint16_t pitch = (uint16_t)(map(potvalue[0], POT_MIN, POT_MAX, 2048, 8192));
         voice[current_track].sampleincrement = pitch;  // change sample pitch if pot has moved enough
         display_pitch = map(pitch, 2048, 8192, 0,100);
@@ -677,6 +680,13 @@ void loop() {
 
       // set track euclidean triggers if either pot has moved enough
       if (!potlock[1] && ! button[8] && display_mode == 1) {
+        seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
+        seq[i].trigger->generateSequence(seq[i].fills, 15);
+        display_pat = (String) seq[i].trigger->textSequence;
+        
+        //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
+      }
+      if (!potlock[1] && ! button[8] && display_mode == 2) {
         seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateRandomSequence(seq[i].fills, 15);
         display_pat = (String) seq[i].trigger->textSequence;
@@ -830,7 +840,7 @@ const int gate_bar_height = 4;
 
 void displayUpdate() {
   display.clearDisplay();
-  //display.setFont(&myfont); don't need to call this every time!
+  display.setFont(&bigfont); //don't need to call this every time!
   //display.setTextColor(WHITE, 0);
   /*
     for (int i = 0; i < 8; i++) {
@@ -876,9 +886,7 @@ void displayUpdate() {
   display.setCursor(trans_text_pos.x, trans_text_pos.y);
   display.print("vol: ");
   display.print(display_vol);
-
-
-
+  
   // seq info / meta
   display.setCursor(seq_info_pos.x, seq_info_pos.y);
   display.print("repeats: ");
@@ -887,13 +895,16 @@ void displayUpdate() {
   // seqno
   display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
   display.print("pitch: ");
+  display.setFont(&bigfont);
   display.print(display_pitch);  // user sees 1-8
   
   // seq info / meta
   display.setCursor(play_text_pos.x, play_text_pos.y);
   display.print("mode: ");
   display.print(display_mode);
-
+  
+  // although cool, can't read 01 in org font
+  //display.setFont(&bigfont); //don't need to call this every time!
   display.setCursor(pat_text_pos.x, pat_text_pos.y);
   display.print((String)display_pat);
   
