@@ -18,6 +18,8 @@ void euclid::generateSequence( uint8_t fills, uint8_t steps){
       }
     }
   }
+  // now generate the text rep.
+  euclid::setTextSequence();
 }
 
 void euclid::generateRandomSequence( uint8_t fills, uint8_t steps){
@@ -49,6 +51,8 @@ void euclid::generateRandomSequence( uint8_t fills, uint8_t steps){
       }
     }
   //}
+    // now generate the text rep.
+  euclid::setTextSequence();
 }
 
 
@@ -78,6 +82,18 @@ uint8_t euclid::getRepeats(){
   return repeats;
 }
 
+/* return a string rep of the pattern */
+
+void euclid::setTextSequence(){
+  
+   for (int i = 0; i < NUMBER_OF_STEPS; i++) textSequence[i] = (euclidianPattern[i] == 0) ? '0' : '1'; 
+   textSequence[NUMBER_OF_STEPS+1] = '\0';
+   //Serial.println(textSequence);
+}
+
+char euclid::getTextSequence(){
+  return *textSequence;
+}
 void euclid::doStep(){
   if(stepCounter<(numberOfSteps-1)) { 
     stepCounter++;
@@ -86,7 +102,8 @@ void euclid::doStep(){
     stepCounter=0;
     repeatCounter++;
     if (repeatCounter > repeats) {
-      rotate(4);
+      rotate(random(5));
+      //Serial.println("rotate");
       repeatCounter = 0;
     }
   }

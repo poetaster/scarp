@@ -66,14 +66,14 @@ const int oled_i2c_addr = 0x3C;
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
-//#include <Adafruit_SSD1306.h>
-//Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
-//#define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-//Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
+#include <Adafruit_SSD1306.h>
+Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
+#define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
-#include <Adafruit_SH110X.h>
-Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, &Wire);
-#define WHITE SH110X_WHITE
+
+//#include <Adafruit_SH110X.h>
+//Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, &Wire);
+//#define WHITE SH110X_WHITE
 
 #include "font.h"
 #include "helvnCB6pt7b.h"
@@ -160,8 +160,9 @@ bool TimerHandler0(struct repeating_timer *t)
 const int key_pins[] = { 0, 2, 4, 6, 8, 10, 12, 14 };
 const int led_pins[] = { 1, 3, 5, 7, 9, 11, 13, 15 };
 
-const int encoderA_pin = 19;
-const int encoderB_pin = 18;
+// on the long ec11 these are swapped A 19, B 18
+const int encoderA_pin = 18;
+const int encoderB_pin = 19;
 const int encoderSW_pin = 28;
 
 
@@ -231,6 +232,9 @@ enum {
 
 int display_mode = MODE_PLAY;
 uint8_t display_repeats = 0;
+uint8_t display_vol = 100;
+uint8_t display_pitch = 50;
+String display_pat;
 
 // --- display details from picostep
 //
@@ -519,8 +523,9 @@ void setup() {
   Wire.setSCL(oled_scl_pin);
   Wire.begin();
 
-  // SSD1306 -- if (!display.begin(SSD1306_SWITCHCAPVCC, oled_i2c_addr)) {
-   if (!display.begin( oled_i2c_addr)) {
+  // SSD1306 -- 
+  if (!display.begin(SSD1306_SWITCHCAPVCC, oled_i2c_addr)) {
+  // if (!display.begin( oled_i2c_addr)) {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;) ;  // Don't proceed, loop forever
   }
@@ -631,8 +636,8 @@ void loop() {
 
       // a track button is pressed
       current_track = i; // keypress selects track we are working on
+      
       //  if ((!potlock[1]) || (!potlock[2])) seq[i].trigger=euclid(16,map(potvalue[1],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS),map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1));
-
 
       // look up drum trigger pattern encoder play modes
       if ( (encoder_pos != encoder_pos_last ) && ! button[8] && display_mode == 0) {
@@ -654,12 +659,16 @@ void loop() {
 
       // change pitch on pot 0
       if (!potlock[0] && display_mode == 0 ) { // change sample if pot has moved enough
-        voice[current_track].sampleincrement = (uint16_t)(map(potvalue[0], POT_MIN, POT_MAX, 2048, 8192)); // change sample pitch if pot has moved enough
+        uint16_t pitch = (uint16_t)(map(potvalue[0], POT_MIN, POT_MAX, 2048, 8192));
+        voice[current_track].sampleincrement = pitch;  // change sample pitch if pot has moved enough
+        display_pitch = map(pitch, 2048, 8192, 0,100);
       }
 
       // change volume on pot 1
       if (!potlock[1] && display_mode == 0) {
-        voice[current_track].level = (int16_t)(map(potvalue[1], POT_MIN, POT_MAX, 0, 1000));
+        int16_t level = (int16_t)(map(potvalue[1], POT_MIN, POT_MAX, 0, 1000));
+        voice[current_track].level = level;
+        display_vol = level/10;
         // change sample volume level if pot has moved enough
       }
       if (!potlock[0] && display_mode == 1 ) {
@@ -669,7 +678,9 @@ void loop() {
       // set track euclidean triggers if either pot has moved enough
       if (!potlock[1] && ! button[8] && display_mode == 1) {
         seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
-        seq[i].trigger->generateSequence(seq[i].fills, 15);
+        seq[i].trigger->generateRandomSequence(seq[i].fills, 15);
+        display_pat = (String) seq[i].trigger->textSequence;
+        
         //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
       }
       //trig/retrig play
@@ -806,12 +817,12 @@ void loop1() {
 //// {x,y} locations of play screen items
 const int step_text_pos[] = { 0, 15, 16, 15, 32, 15, 48, 15, 64, 15, 80, 15, 96, 15, 112, 15 };
 const pos_t bpm_text_pos    = {.x = 0,  .y = 15, .str = "bpm:%3d" };
-const pos_t trans_text_pos  = {.x = 46, .y = 15, .str = "trs:%+2d" };
-const pos_t seqno_text_pos  = {.x = 90, .y = 15, .str = "seq:%d" };
-const pos_t seq_info_pos    = {.x = 0, .y = 35, .str = "" };
-const pos_t play_text_pos   = {.x = 0, .y = 55, .str = "" };
+const pos_t trans_text_pos  = {.x = 80, .y = 15, .str = "trs:%+2d" };
+const pos_t seqno_text_pos  = {.x = 80, .y = 30, .str = "seq:%d" };
+const pos_t seq_info_pos    = {.x = 0, .y = 30, .str = "" };
+const pos_t play_text_pos   = {.x = 0, .y = 45, .str = "" };
+const pos_t pat_text_pos    = {.x = 0, .y = 60,  .str = "" };
 
-const pos_t oct_text_offset = { .x = 3, .y = 10,  .str = "" };
 const pos_t gate_bar_offset = { .x = 0, .y = -15, .str = "" };
 const pos_t edit_text_offset = { .x = 3, .y = 22,  .str = "" };
 const int gate_bar_width = 14;
@@ -863,22 +874,29 @@ void displayUpdate() {
 
   // transpose
   display.setCursor(trans_text_pos.x, trans_text_pos.y);
-  display.print("clk: ");
-  display.print(clk_display);
+  display.print("vol: ");
+  display.print(display_vol);
 
-  // seqno
-  display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
-  display.print("hit: ");
-  display.print(clk_hits);  // user sees 1-8
+
 
   // seq info / meta
   display.setCursor(seq_info_pos.x, seq_info_pos.y);
   display.print("repeats: ");
   display.print(display_repeats);
+  
+  // seqno
+  display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
+  display.print("pitch: ");
+  display.print(display_pitch);  // user sees 1-8
+  
   // seq info / meta
   display.setCursor(play_text_pos.x, play_text_pos.y);
   display.print("mode: ");
   display.print(display_mode);
+
+  display.setCursor(pat_text_pos.x, pat_text_pos.y);
+  display.print((String)display_pat);
+  
   // play/pause
   //display.setCursor(play_text_pos.x, play_text_pos.y);
   //display.print(seqr.playing ? " >" : "[]");
@@ -894,13 +912,4 @@ void displaySplash() {
   display.setCursor(25, 32);
   display.print("PikoBeatBox");
   display.display();
-  // a little LED dance
-  /*
-    for( int i=0; i<1000; i++) {
-    for( int j=0; j<8; j++) {
-      int v = 30 + 30 * sin( (j*6.2 / 8 ) + i/50.0 ) ;
-      analogWrite( led_pins[j], v);
-    }
-    delay(1);
-    }*/
 }

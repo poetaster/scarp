@@ -16,11 +16,15 @@ public:
   void doStep();
   void setRepeats(uint8_t repeats);
   uint8_t getRepeats();
+  void setTextSequence();
+  char getTextSequence();
   void resetSequence();
-
+  char textSequence[NUMBER_OF_STEPS+1];
+  
 private:
 
   bool euclidianPattern[NUMBER_OF_STEPS+1];
+
   uint8_t stepCounter;
   uint8_t repeatCounter;
   uint8_t numberOfSteps;
