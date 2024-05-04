@@ -55,7 +55,6 @@ void euclid::generateRandomSequence( uint8_t fills, uint8_t steps){
   euclid::setTextSequence();
 }
 
-
 void euclid::rotate(uint8_t _steps){
   for(int i=0;i<_steps;i++){
     bool temp=euclidianPattern[numberOfSteps];
@@ -63,9 +62,7 @@ void euclid::rotate(uint8_t _steps){
       euclidianPattern[j]=euclidianPattern[j-1];
     }
     euclidianPattern[0]=temp;
-    
   }
- setTextSequence();
 }
 
 bool euclid::getStep(uint8_t _step){
@@ -106,7 +103,7 @@ void euclid::doStep(){
     if (repeats>0) repeatCounter++;
     if (repeatCounter > repeats && repeats != 0 ) {
       //this->generateSequence(this->numberOfSteps, this->numberOfFills);
-      rotate(3);
+      rotate(4);
       //Serial.println(this->textSequence);
       repeatCounter = 0;
     }
