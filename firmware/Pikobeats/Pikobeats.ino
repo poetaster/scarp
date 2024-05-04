@@ -66,14 +66,14 @@ const int oled_i2c_addr = 0x3C;
 #define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
-#include <Adafruit_SSD1306.h>
-Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
-#define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+//#include <Adafruit_SSD1306.h>
+//Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
+//#define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
 
-//#include <Adafruit_SH110X.h>
-//Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, &Wire);
-//#define WHITE SH110X_WHITE
+#include <Adafruit_SH110X.h>
+Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, &Wire);
+#define WHITE SH110X_WHITE
 
 #include "font.h"
 #include "helvnCB6pt7b.h"
@@ -162,8 +162,8 @@ const int key_pins[] = { 0, 2, 4, 6, 8, 10, 12, 14 };
 const int led_pins[] = { 1, 3, 5, 7, 9, 11, 13, 15 };
 
 // on the long ec11 these are swapped A 19, B 18
-const int encoderA_pin = 18;
-const int encoderB_pin = 19;
+const int encoderA_pin = 19;
+const int encoderB_pin = 18;
 const int encoderSW_pin = 28;
 
 
@@ -317,7 +317,7 @@ uint16_t readpot(uint8_t potnum) {
 // we have 8 voices that can play any sample when triggered
 // this structure holds the settings for each voice
 
-#define NUM_VOICES 8
+#define NUM_VOICES 20
 
 struct voice_t {
   int16_t sample;   // index of the sample structure in sampledefs.h
@@ -328,51 +328,28 @@ struct voice_t {
 } voice[NUM_VOICES] = {
   0,      // default voice 0 assignment - typically a kick but you can map them any way you want
   900,  // initial level
-  0,    // sampleindex
+  1,    // sampleindex
   4096, // initial pitch step - normal pitch
   false, // sample not playing
-
-  1,      // default voice 1 assignment 7 is 'boom' 36 is fun these are angular assignments
-  900,
-  0,    // sampleindex
-  4096, // initial pitch step - normal pitch
-  false, // sample not playing
-
-  12,    // default voice 2 assignment was 2, 29 36, 37 is funny
-  900, // level
-  0,    // sampleindex
-  4096, // initial pitch step - normal pitch
-  false, // sample not playing
-
-  8,    // default voice 3 assignment 28
-  900, // level
-  0,    // sampleindex
-  4096, // initial pitch step - normal pitch
-  false, // sample not playing
-
-  5,    // default voice 4  10 is an 808 wood block assignment 31 here? 4
-  900,  // level
-  0,    // sampleindex
-  4096, // initial pitch step - normal pitch
-  false, // sample not playing
-
-  6,    // default voice 5 assignment 35
-  900,  // level
-  0,    // sampleindex
-  4096, // initial pitch step - normal pitch
-  false, // sample not playing
-
-  7,    // default voice 6 assignment 13, 14 open hat, 23 tight snare, 33 clave? or sidestick
-  900,  // level
-  0,    // sampleindex
-  4096, // initial pitch step - normal pitch
-  false, // sample not playing
-
-  13,    // default voice 7 assignment 10 
-  900,   // level
-  0,    // sampleindex
-  4096, // initial pitch step - normal pitch
-  false, // sample not playing
+  2,900, 0, 4096, false, 
+  3,900, 0, 4096, false,
+  4,900, 0, 4096, false,
+  5,900, 0, 4096, false,
+  6,900, 0, 4096, false,
+  7,900, 0, 4096, false,
+  8,900, 0, 4096, false,
+  9,900, 0, 4096, false,
+  10,900, 0, 4096, false,
+  11,900, 0, 4096, false,
+  12,900, 0, 4096, false,
+  13,900, 0, 4096, false,
+  14,900, 0, 4096, false,
+  15,900, 0, 4096, false,
+  16,900, 0, 4096, false,
+  17,900, 0, 4096, false,
+  18,900, 0, 4096, false,
+  19,900, 0, 4096, false,
+  
 };
 
 
@@ -389,7 +366,7 @@ struct voice_t {
 // wave2header also creates "samples.h" which #includes all the generated header files
 
 //#include "808/samples.h" // 808 sounds
-#include "Jungle/samples.h"
+//#include "Jungle/samples.h"
 //#include "808samples/samples.h" // 808 sounds
 //#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
 //#include "Angular_Techno_Set/samples.h"   // Techno
@@ -400,7 +377,7 @@ struct voice_t {
 //#include "world/samples.h"
 //#include "mt40sr88sy1/samples.h"
 //#include "kurzweill/samples.h"
-//#include "beatbox/samples.h"
+#include "beatbox/samples.h"
 
 #define NUM_SAMPLES (sizeof(sample)/sizeof(sample_t))
 
@@ -499,7 +476,7 @@ uint16_t rightRotate(int shift, uint16_t value, uint8_t pattern_length) {
 // main core setup
 void setup() {
   // set clock speed as in picokore
-  set_sys_clock_khz(264000, true);
+  //set_sys_clock_khz(264000, true); don't do this :)
 
   Serial.begin(115200);
   Serial.print(F("\nStarting RPM_Measure on ")); Serial.println(BOARD_NAME);
@@ -527,8 +504,8 @@ void setup() {
   Wire.begin();
 
   // SSD1306 -- 
-  if (!display.begin(SSD1306_SWITCHCAPVCC, oled_i2c_addr)) {
-  // if (!display.begin( oled_i2c_addr)) {
+  //if (!display.begin(SSD1306_SWITCHCAPVCC, oled_i2c_addr)) {
+  if (!display.begin( oled_i2c_addr)) {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;) ;  // Don't proceed, loop forever
   }
@@ -616,7 +593,7 @@ void loop() {
       if ( !encoder_held ) {
         encoder_held = true;
         display_mode = display_mode+1;
-        if ( display_mode > 2) { // switched back to play mode
+        if ( display_mode > 3) { // switched back to play mode
           display_mode = 0;
           //configure_sequencer();
         }
@@ -663,8 +640,11 @@ void loop() {
       // change pitch on pot 0
       if (!potlock[0] && ( display_mode == 0 || display_mode ==2) ){ // change sample if pot has moved enough
         uint16_t pitch = (uint16_t)(map(potvalue[0], POT_MIN, POT_MAX, 2048, 8192));
-        voice[current_track].sampleincrement = pitch;  // change sample pitch if pot has moved enough
-        display_pitch = map(pitch, 2048, 8192, 0,100);
+        // divisible by 2 and it won't click
+        if (pitch%2 == 0) { 
+          voice[current_track].sampleincrement = pitch;  // change sample pitch if pot has moved enough
+          display_pitch = map(pitch, 2048, 8192, 0,100);
+        }
       }
 
       // change volume on pot 1
@@ -682,6 +662,7 @@ void loop() {
       if (!potlock[1] && ! button[8] && display_mode == 1) {
         seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateSequence(seq[i].fills, 15);
+        seq[i].trigger->resetSequence(); // set to 0
         display_pat = (String) seq[i].trigger->textSequence;
         
         //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
@@ -694,7 +675,7 @@ void loop() {
         //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
       }
       //trig/retrig play
-      if ( display_mode == 2 && i < 8 && ! voice[current_track].sampleindex < 100 ) {
+      if ( display_mode == 3 && i < 8 && ! voice[current_track].sampleindex < 100 ) {
          voice[current_track].sampleindex = 0; // trigger sample for this track
          voice[current_track].isPlaying = true;
       }
@@ -827,8 +808,8 @@ void loop1() {
 //// {x,y} locations of play screen items
 const int step_text_pos[] = { 0, 15, 16, 15, 32, 15, 48, 15, 64, 15, 80, 15, 96, 15, 112, 15 };
 const pos_t bpm_text_pos    = {.x = 0,  .y = 15, .str = "bpm:%3d" };
-const pos_t trans_text_pos  = {.x = 80, .y = 15, .str = "trs:%+2d" };
-const pos_t seqno_text_pos  = {.x = 80, .y = 30, .str = "seq:%d" };
+const pos_t trans_text_pos  = {.x = 65, .y = 15, .str = "trs:%+2d" };
+const pos_t seqno_text_pos  = {.x = 65, .y = 30, .str = "seq:%d" };
 const pos_t seq_info_pos    = {.x = 0, .y = 30, .str = "" };
 const pos_t play_text_pos   = {.x = 0, .y = 45, .str = "" };
 const pos_t pat_text_pos    = {.x = 0, .y = 60,  .str = "" };
@@ -840,7 +821,8 @@ const int gate_bar_height = 4;
 
 void displayUpdate() {
   display.clearDisplay();
-  display.setFont(&bigfont); //don't need to call this every time!
+  //display.setFont(&myfont); //don't need to call this every time!
+  display.cp437(true); 
   //display.setTextColor(WHITE, 0);
   /*
     for (int i = 0; i < 8; i++) {
@@ -879,33 +861,33 @@ void displayUpdate() {
   */
   // bpm
   display.setCursor(bpm_text_pos.x, bpm_text_pos.y);
-  display.print("bpm: ");
+  display.print("BPM: ");
   display.print(bpm);
 
   // transpose
   display.setCursor(trans_text_pos.x, trans_text_pos.y);
-  display.print("vol: ");
+  display.print("VOL: ");
   display.print(display_vol);
   
   // seq info / meta
   display.setCursor(seq_info_pos.x, seq_info_pos.y);
-  display.print("repeats: ");
+  display.print("REPS: ");
   display.print(display_repeats);
   
   // seqno
   display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
-  display.print("pitch: ");
-  display.setFont(&bigfont);
+  display.print("PITCH: ");
   display.print(display_pitch);  // user sees 1-8
   
   // seq info / meta
   display.setCursor(play_text_pos.x, play_text_pos.y);
-  display.print("mode: ");
+  display.print("MODE: ");
   display.print(display_mode);
   
   // although cool, can't read 01 in org font
   //display.setFont(&bigfont); //don't need to call this every time!
   display.setCursor(pat_text_pos.x, pat_text_pos.y);
+  display.print("PAT: ");
   display.print((String)display_pat);
   
   // play/pause
