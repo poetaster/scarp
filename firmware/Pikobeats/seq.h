@@ -13,7 +13,7 @@
 
 int16_t bpm = TEMPO;
 int32_t lastMIDIclock; // timestamp of last MIDI clock
-int16_t MIDIclocks = PPQN * 2; // midi clock counter
+int16_t MIDIclocks = PPQN ;//* 2; // midi clock counter
 int16_t MIDIsync = 16;  // number of clocks required to sync BPM
 int16_t useMIDIclock = 0; // true if we are using MIDI clock
 long clocktimer = 0; // clock rate in ms

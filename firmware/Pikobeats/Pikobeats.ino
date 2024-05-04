@@ -368,7 +368,7 @@ struct voice_t {
 //#include "808/samples.h" // 808 sounds
 //#include "Jungle/samples.h"
 //#include "808samples/samples.h" // 808 sounds
-//#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
+#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
 //#include "Angular_Techno_Set/samples.h"   // Techno
 //#include "Acoustic3/samples.h"   // acoustic drums
 //#include "Pico_kit/samples.h"   // assorted samples
@@ -377,7 +377,7 @@ struct voice_t {
 //#include "world/samples.h"
 //#include "mt40sr88sy1/samples.h"
 //#include "kurzweill/samples.h"
-#include "beatbox/samples.h"
+//#include "beatbox/samples.h"
 
 #define NUM_SAMPLES (sizeof(sample)/sizeof(sample_t))
 
