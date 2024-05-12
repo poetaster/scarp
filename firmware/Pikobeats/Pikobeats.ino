@@ -115,7 +115,8 @@ bool sync = false; // used to detect if we have input sync
 bool TimerHandler0(struct repeating_timer *t)
 {  
   (void) t;  
-  if( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin) && debounceCounter >= DEBOUNCING_INTERVAL_MS)
+  //if( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin) && debounceCounter >= DEBOUNCING_INTERVAL_MS)
+  if( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin))
   {
     //min time between pulses has passed
     // calculate bpm
