@@ -93,7 +93,7 @@ uint32_t clk_sync_last;
 #include "RPi_Pico_TimerInterrupt.h"
 unsigned int SWPin = CLOCKIN;
 #define TIMER0_INTERVAL_MS       1
-#define DEBOUNCING_INTERVAL_MS   80
+#define DEBOUNCING_INTERVAL_MS   2// 80
 #define LOCAL_DEBUG              1
 // Init RPI_PICO_Timer, can use any from 0-15 pseudo-hardware timers
 RPI_PICO_Timer ITimer0(0);
@@ -348,8 +348,7 @@ struct voice_t {
   16,900, 0, 4096, false,
   17,900, 0, 4096, false,
   18,900, 0, 4096, false,
-  19,900, 0, 4096, false,
-  
+  19,900, 0, 4096, false, 
 };
 
 
