@@ -1,6 +1,8 @@
 # scarp
 The scarp project, named like it's brethren, rampart and keep (aka. moat) is an experimental, open hardware design. 
 
+![PCB](scarp-final.jpg)
+
 It can include a 4pin I2C display. Or a three pin I2S DAC. All the pins on the pico are exposed and you can add headers to use them.
 
 The board uses all GPIO. 8 buttons, 8 leds, 2 pots and an encoder.
@@ -23,6 +25,6 @@ This project was inspired by Teenage Engineering, pikocore designed by Zack Scho
 
 THIS BOARD is in production and the first version, with only pwm output works really well!.
 
-![PCB](scarp-pcb.png)
+![PCB](scarp_pcb.jpg)
 
 ![Breadboard](scarp-breadboard.png)
