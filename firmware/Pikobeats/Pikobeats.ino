@@ -333,33 +333,33 @@ struct voice_t {
   4096, // initial pitch step - normal pitch
   false, // sample not playing
   2,900, 0, 4096, false, 
+  17,900, 0, 4096, false,
+  8,900, 0, 4096, false,
+  11,900, 0, 4096, false,
+  12,900, 0, 4096, false,
+  15,900, 0, 4096, false,
+  23,900, 0, 4096, false,
   3,900, 0, 4096, false,
   4,900, 0, 4096, false,
   5,900, 0, 4096, false,
-  6,900, 0, 4096, false,
-  7,900, 0, 4096, false,
-  8,900, 0, 4096, false,
   9,900, 0, 4096, false,
   10,900, 0, 4096, false,
-  11,900, 0, 4096, false,
-  12,900, 0, 4096, false,
   13,900, 0, 4096, false,
   14,900, 0, 4096, false,
-  15,900, 0, 4096, false,
   16,900, 0, 4096, false,
-  17,900, 0, 4096, false,
+  7,900, 0, 4096, false,
   18,900, 0, 4096, false,
   19,900, 0, 4096, false, 
   20,900, 0, 4096, false, 
   21,900, 0, 4096, false,
   22,900, 0, 4096, false,
-  23,900, 0, 4096, false,
   24,900, 0, 4096, false,
   25,900, 0, 4096, false,
   26,900, 0, 4096, false,
   27,900, 0, 4096, false,
   28,900, 0, 4096, false,
-  29,900, 0, 4096, false
+  29,900, 0, 4096, false,
+  28,900, 0, 4096, false
 };
 
 
@@ -375,7 +375,7 @@ struct voice_t {
 // sampledefs.h contains other information not used by this program e.g. the name of the sample file - I wrote it for another project
 // wave2header also creates "samples.h" which #includes all the generated header files
 
-#include "80s/samples.h" // 808 sounds
+#include "80s/samples.h" // 808, mt40sr88sy1, sounds
 //#include "Jungle/samples.h"
 //#include "808samples/samples.h" // 808 sounds
 //#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
@@ -575,6 +575,10 @@ void setup() {
   ra.Init(5);
   
   seq[0].trigger->generateRandomSequence(8, 16);
+  seq[1].trigger->generateRandomSequence(3, 16);
+  seq[5].trigger->generateRandomSequence(3, 16);
+  seq[6].trigger->generateRandomSequence(3, 16);
+  seq[7].trigger->generateRandomSequence(3, 16);
   display_value(NUM_SAMPLES); // show number of samples on the display
 
 }
@@ -700,7 +704,7 @@ void loop() {
   }
 
   // now, after buttons check if only encoder moved and no buttons
-  if (! anybuttonpressed && encoder_delta > 0) {
+  if (! anybuttonpressed && encoder_delta ) {
     bpm = bpm + encoder_delta;
     displayUpdate();
     display_value(bpm - 50);
