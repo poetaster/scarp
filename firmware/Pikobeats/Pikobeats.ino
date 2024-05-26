@@ -318,7 +318,7 @@ uint16_t readpot(uint8_t potnum) {
 // we have 8 voices that can play any sample when triggered
 // this structure holds the settings for each voice
 
-#define NUM_VOICES 20
+#define NUM_VOICES 30
 
 struct voice_t {
   int16_t sample;   // index of the sample structure in sampledefs.h
@@ -350,6 +350,16 @@ struct voice_t {
   17,900, 0, 4096, false,
   18,900, 0, 4096, false,
   19,900, 0, 4096, false, 
+  20,900, 0, 4096, false, 
+  21,900, 0, 4096, false,
+  22,900, 0, 4096, false,
+  23,900, 0, 4096, false,
+  24,900, 0, 4096, false,
+  25,900, 0, 4096, false,
+  26,900, 0, 4096, false,
+  27,900, 0, 4096, false,
+  28,900, 0, 4096, false,
+  29,900, 0, 4096, false
 };
 
 
@@ -365,7 +375,7 @@ struct voice_t {
 // sampledefs.h contains other information not used by this program e.g. the name of the sample file - I wrote it for another project
 // wave2header also creates "samples.h" which #includes all the generated header files
 
-//#include "808/samples.h" // 808 sounds
+#include "80s/samples.h" // 808 sounds
 //#include "Jungle/samples.h"
 //#include "808samples/samples.h" // 808 sounds
 //#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
@@ -378,7 +388,7 @@ struct voice_t {
 //#include "mt40sr88sy1/samples.h"
 //#include "kurzweill/samples.h"
 //#include "beatbox/samples.h"
-#include "meshhuga/samples.h"
+//#include "meshhuga/samples.h"
 #define NUM_SAMPLES (sizeof(sample)/sizeof(sample_t))
 
 // sample and debounce the keys
@@ -690,7 +700,7 @@ void loop() {
   }
 
   // now, after buttons check if only encoder moved and no buttons
-  if (! anybuttonpressed && encoder_delta) {
+  if (! anybuttonpressed && encoder_delta > 0) {
     bpm = bpm + encoder_delta;
     displayUpdate();
     display_value(bpm - 50);
@@ -736,7 +746,7 @@ void loop() {
 // second core setup
 // second core dedicated to sample processing
 void setup1() {
-  delay (1000); // wait for main core to start up perhipherals
+  delay (2000); // wait for main core to start up perhipherals
 }
 
 // second core calculates samples and sends to DAC
