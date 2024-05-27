@@ -58,165 +58,95 @@ struct sample_t {
 	127,	// play volume 0-127
 	"Cy0025",	// sample name
 
-	Cy1025,	// pointer to sample array
-	Cy1025_SIZE,	// size of the sample array
-	Cy1025_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	42,	// MIDI note on that plays this sample
-	127,	// play volume 0-127
-	"Cy1025",	// sample name
-
 	Hc00,	// pointer to sample array
 	Hc00_SIZE,	// size of the sample array
 	Hc00_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	43,	// MIDI note on that plays this sample
+	42,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Hc00",	// sample name
-
-	Ht00,	// pointer to sample array
-	Ht00_SIZE,	// size of the sample array
-	Ht00_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	44,	// MIDI note on that plays this sample
-	127,	// play volume 0-127
-	"Ht00",	// sample name
 
 	Lt00,	// pointer to sample array
 	Lt00_SIZE,	// size of the sample array
 	Lt00_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	45,	// MIDI note on that plays this sample
+	43,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Lt00",	// sample name
 
 	Ma,	// pointer to sample array
 	Ma_SIZE,	// size of the sample array
 	Ma_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	46,	// MIDI note on that plays this sample
+	44,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Ma",	// sample name
 
 	Mt40clave,	// pointer to sample array
 	Mt40clave_SIZE,	// size of the sample array
 	Mt40clave_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	47,	// MIDI note on that plays this sample
+	45,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Mt40clave",	// sample name
 
 	Mt40clhat,	// pointer to sample array
 	Mt40clhat_SIZE,	// size of the sample array
 	Mt40clhat_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	48,	// MIDI note on that plays this sample
+	46,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Mt40clhat",	// sample name
-
-	Mt40kick01,	// pointer to sample array
-	Mt40kick01_SIZE,	// size of the sample array
-	Mt40kick01_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	49,	// MIDI note on that plays this sample
-	127,	// play volume 0-127
-	"Mt40kick01",	// sample name
 
 	Mt40ophat01,	// pointer to sample array
 	Mt40ophat01_SIZE,	// size of the sample array
 	Mt40ophat01_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	50,	// MIDI note on that plays this sample
+	47,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Mt40ophat01",	// sample name
-
-	Mt40snr01,	// pointer to sample array
-	Mt40snr01_SIZE,	// size of the sample array
-	Mt40snr01_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	51,	// MIDI note on that plays this sample
-	127,	// play volume 0-127
-	"Mt40snr01",	// sample name
 
 	Oh00,	// pointer to sample array
 	Oh00_SIZE,	// size of the sample array
 	Oh00_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	52,	// MIDI note on that plays this sample
+	48,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Oh00",	// sample name
-
-	Oh25,	// pointer to sample array
-	Oh25_SIZE,	// size of the sample array
-	Oh25_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	53,	// MIDI note on that plays this sample
-	127,	// play volume 0-127
-	"Oh25",	// sample name
 
 	Rs,	// pointer to sample array
 	Rs_SIZE,	// size of the sample array
 	Rs_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	54,	// MIDI note on that plays this sample
+	49,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Rs",	// sample name
 
 	Sd0000,	// pointer to sample array
 	Sd0000_SIZE,	// size of the sample array
 	Sd0000_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	55,	// MIDI note on that plays this sample
+	50,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Sd0000",	// sample name
-
-	Sd0010,	// pointer to sample array
-	Sd0010_SIZE,	// size of the sample array
-	Sd0010_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	56,	// MIDI note on that plays this sample
-	127,	// play volume 0-127
-	"Sd0010",	// sample name
 
 	Sd0025,	// pointer to sample array
 	Sd0025_SIZE,	// size of the sample array
 	Sd0025_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	57,	// MIDI note on that plays this sample
+	51,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Sd0025",	// sample name
-
-	Sd0050,	// pointer to sample array
-	Sd0050_SIZE,	// size of the sample array
-	Sd0050_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	58,	// MIDI note on that plays this sample
-	127,	// play volume 0-127
-	"Sd0050",	// sample name
 
 	Sd7525,	// pointer to sample array
 	Sd7525_SIZE,	// size of the sample array
 	Sd7525_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	59,	// MIDI note on that plays this sample
+	52,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Sd7525",	// sample name
 
 	Sd7550,	// pointer to sample array
 	Sd7550_SIZE,	// size of the sample array
 	Sd7550_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	60,	// MIDI note on that plays this sample
+	53,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Sd7550",	// sample name
-
-	Sd7575,	// pointer to sample array
-	Sd7575_SIZE,	// size of the sample array
-	Sd7575_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	61,	// MIDI note on that plays this sample
-	127,	// play volume 0-127
-	"Sd7575",	// sample name
 
 	Sr88clhat,	// pointer to sample array
 	Sr88clhat_SIZE,	// size of the sample array
 	Sr88clhat_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	62,	// MIDI note on that plays this sample
+	54,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
 	"Sr88clhat",	// sample name
-
-	Sr88kick,	// pointer to sample array
-	Sr88kick_SIZE,	// size of the sample array
-	Sr88kick_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	63,	// MIDI note on that plays this sample
-	127,	// play volume 0-127
-	"Sr88kick",	// sample name
-
-	Sy1kick01,	// pointer to sample array
-	Sy1kick01_SIZE,	// size of the sample array
-	Sy1kick01_SIZE,	//sampleindex. if at end of sample array sound is not playing
-	64,	// MIDI note on that plays this sample
-	127,	// play volume 0-127
-	"Sy1kick01",	// sample name
 
 };

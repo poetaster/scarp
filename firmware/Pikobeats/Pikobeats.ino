@@ -317,56 +317,16 @@ uint16_t readpot(uint8_t potnum) {
 
 // we have 8 voices that can play any sample when triggered
 // this structure holds the settings for each voice
+// 80s only to 20, jungle to 29
 
-#define NUM_VOICES 30
-
-struct voice_t {
-  int16_t sample;   // index of the sample structure in sampledefs.h
-  int16_t level;   // 0-1000 for legacy reasons
-  uint32_t sampleindex; // 20:12 fixed point index into the sample array
-  uint16_t sampleincrement; // 1:12 fixed point sample step for pitch changes
-  bool isPlaying;  // true when sample is playing
-} voice[NUM_VOICES] = {
-  0,      // default voice 0 assignment - typically a kick but you can map them any way you want
-  900,  // initial level
-  1,    // sampleindex
-  4096, // initial pitch step - normal pitch
-  false, // sample not playing
-  2,900, 0, 4096, false, 
-  17,900, 0, 4096, false,
-  8,900, 0, 4096, false,
-  11,900, 0, 4096, false,
-  12,900, 0, 4096, false,
-  15,900, 0, 4096, false,
-  23,900, 0, 4096, false,
-  3,900, 0, 4096, false,
-  4,900, 0, 4096, false,
-  5,900, 0, 4096, false,
-  9,900, 0, 4096, false,
-  10,900, 0, 4096, false,
-  13,900, 0, 4096, false,
-  14,900, 0, 4096, false,
-  16,900, 0, 4096, false,
-  7,900, 0, 4096, false,
-  18,900, 0, 4096, false,
-  19,900, 0, 4096, false, 
-  20,900, 0, 4096, false, 
-  21,900, 0, 4096, false,
-  22,900, 0, 4096, false,
-  24,900, 0, 4096, false,
-  25,900, 0, 4096, false,
-  26,900, 0, 4096, false,
-  27,900, 0, 4096, false,
-  28,900, 0, 4096, false,
-  29,900, 0, 4096, false,
-  28,900, 0, 4096, false
-};
-
+//we use a header per sample set
+//#include "80s.h"
+//#include "beatbox.h"
+#include "angularj.h"
 
 // we can have an arbitrary number of samples but you will run out of memory at some point
 // sound sample files are 22khz 16 bit signed PCM format - see the sample include files for examples
 // you can change the sample rate to whatever you want but most testing was done at 22khz. 44khz probably works but not much testing was done
-
 // use the wave2header22khz.exe utility to automagically batch convert all the .wav files in a directory into the required header files
 // put your 22khz or 44khz PCM wav files in a sample subdirectory with a copy of the utility, run the utility and it will generate all the required header files
 // wave2header creates a header file containing the signed PCM values for each sample - note that it may change the name of the file if required to make it "c friendly"
@@ -374,8 +334,6 @@ struct voice_t {
 // the samples are arranged in alphabetical order to facilitate grouping samples by name - you can manually edit this file to change the order of the samples as needed
 // sampledefs.h contains other information not used by this program e.g. the name of the sample file - I wrote it for another project
 // wave2header also creates "samples.h" which #includes all the generated header files
-
-#include "80s/samples.h" // 808, mt40sr88sy1, sounds
 //#include "Jungle/samples.h"
 //#include "808samples/samples.h" // 808 sounds
 //#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
@@ -388,7 +346,9 @@ struct voice_t {
 //#include "mt40sr88sy1/samples.h"
 //#include "kurzweill/samples.h"
 //#include "beatbox/samples.h"
-//#include "meshhuga/samples.h"
+//#include "bbox/samples.h"
+
+
 #define NUM_SAMPLES (sizeof(sample)/sizeof(sample_t))
 
 // sample and debounce the keys
@@ -575,10 +535,9 @@ void setup() {
   ra.Init(5);
   
   seq[0].trigger->generateRandomSequence(8, 16);
-  seq[1].trigger->generateRandomSequence(3, 16);
-  seq[5].trigger->generateRandomSequence(3, 16);
-  seq[6].trigger->generateRandomSequence(3, 16);
-  seq[7].trigger->generateRandomSequence(3, 16);
+  seq[2].trigger->generateRandomSequence(3, 16);
+  seq[5].trigger->generateRandomSequence(5, 16);
+  seq[7].trigger->generateRandomSequence(6, 16);
   display_value(NUM_SAMPLES); // show number of samples on the display
 
 }
@@ -607,7 +566,7 @@ void loop() {
       if ( !encoder_held ) {
         encoder_held = true;
         display_mode = display_mode+1;
-        if ( display_mode > 3) { // switched back to play mode
+        if ( display_mode > 2) { // switched back to play mode
           display_mode = 0;
           //configure_sequencer();
         }
@@ -669,7 +628,10 @@ void loop() {
         // change sample volume level if pot has moved enough
       }
       if (!potlock[0] && display_mode == 1 ) {
-        filter_fc = potvalue[0] * (LPF_MAX + 10) / 4096;
+        //filter_fc = potvalue[0] * (LPF_MAX + 10) / 4096;
+        seq[i].fills = map(potvalue[0], POT_MIN, POT_MAX, 0, 16);
+        seq[i].trigger->generateRandomSequence(seq[i].fills, 15);
+        display_pat = (String) seq[i].trigger->textSequence;
       }
 
       // set track euclidean triggers if either pot has moved enough
@@ -679,17 +641,9 @@ void loop() {
         seq[i].trigger->resetSequence(); // set to 0
         display_pat = (String) seq[i].trigger->textSequence;
         
-        //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
-      }
-      if (!potlock[1] && ! button[8] && display_mode == 2) {
-        seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
-        seq[i].trigger->generateRandomSequence(seq[i].fills, 15);
-        display_pat = (String) seq[i].trigger->textSequence;
-        
-        //seq[i].trigger= drumpatterns[map(potvalue[1],POT_MIN,POT_MAX,0,NUMPATTERNS-1)];
       }
       //trig/retrig play
-      if ( display_mode == 3 && i < 8 && ! voice[current_track].sampleindex < 100 ) {
+      if ( display_mode == 2 && i < 8 && voice[current_track].isPlaying == false) {
          voice[current_track].sampleindex = 0; // trigger sample for this track
          voice[current_track].isPlaying = true;
       }
