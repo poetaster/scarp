@@ -322,6 +322,7 @@ uint16_t readpot(uint8_t potnum) {
 //we use a header per sample set
 //#include "80s.h"
 //#include "beatbox.h"
+//#include "bbox.h"
 #include "angularj.h"
 
 // we can have an arbitrary number of samples but you will run out of memory at some point

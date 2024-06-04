@@ -16,6 +16,10 @@ Include examples for
  * pikocore  The scarp branch here: https://github.com/poetaster/pikocore/tree/scarp allows you to play the pikocore firmware, with some tweaks to adapt to this hardware layout.
  * circuitpython - There is also an elaborate circuitpython audio example based on todbots https://github.com/todbot/picostepseq but including audio output ;)
 
+
+I sell my tonetoys synths at https://poetaster.org or on etsy at https://tonetoys.etsy.com, or Tindie :)
+
+<a href="https://www.tindie.com/stores/poetaster/?ref=offsite_badges&utm_source=sellers_poetaster&utm_medium=badges&utm_campaign=badge_small"><img src="https://d2ss6ovg47m0r5.cloudfront.net/badges/tindie-smalls.png" alt="I sell on Tindie" width="200" height="55"></a>
  
 I've had a bunch of fun with:
 
