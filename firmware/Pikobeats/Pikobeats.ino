@@ -81,6 +81,7 @@ Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, &Wire);
 #define bigfont helvnCB6pt7b
 
 // from pikocore for bpm calcs on clk input
+// this is unused, deprecate?
 #include "runningavg.h"
 RunningAverage ra;
 volatile int clk_display;
@@ -95,8 +96,10 @@ unsigned int SWPin = CLOCKIN;
 #define TIMER0_INTERVAL_MS       1
 #define DEBOUNCING_INTERVAL_MS   2// 80
 #define LOCAL_DEBUG              1
+
 // Init RPI_PICO_Timer, can use any from 0-15 pseudo-hardware timers
 RPI_PICO_Timer ITimer0(0);
+
 volatile unsigned long rotationTime = 0;
 float RPM       = 0.00;
 float avgRPM    = 0.00;
