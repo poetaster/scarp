@@ -324,9 +324,9 @@ uint16_t readpot(uint8_t potnum) {
 
 //we use a header per sample set
 //#include "80s.h"
-//#include "beatbox.h"
+#include "beatbox.h"
 //#include "bbox.h"
-#include "angularj.h"
+//#include "angularj.h"
 
 // we can have an arbitrary number of samples but you will run out of memory at some point
 // sound sample files are 22khz 16 bit signed PCM format - see the sample include files for examples

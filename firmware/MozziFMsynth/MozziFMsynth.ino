@@ -431,7 +431,7 @@ void updateFM() {
 
 }
 
-int updateAudio(){
+AudioOutput_t updateAudio(){
     Q15n16 modulation = deviation * aModulator.next() >> 8;
     return (envelope.next() * (int)aCarrier.phMod(modulation)) >> 8;
   //int modulation = kSmoothNote.next(fm_intensity) * aModulator.next();
