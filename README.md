@@ -31,4 +31,6 @@ THIS BOARD is in production and the first version, with only pwm output works re
 
 ![PCB](scarp_pcb.jpg)
 
+![Schematic](scarp_schem.jpg)
+
 ![Breadboard](scarp-breadboard.png)
