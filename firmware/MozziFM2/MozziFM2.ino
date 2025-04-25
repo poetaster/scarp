@@ -15,6 +15,9 @@
 
   Much of this code is based on the Mozzi example Knob_LightLevel_x2_FMsynth (C) Tim Barrass
 */
+
+bool debugging = true;
+
 #define AUDIO_CHANNEL_1_PIN 22
 #define MOZZI_AUDIO_PIN_1 22
 
@@ -52,31 +55,51 @@
 #include <ADSR.h>
 #include <Wire.h>
 
-#include <RotaryEncoder.h>
-//#include <Bounce2.h>
-#include <Adafruit_SSD1306.h>
+// GPIO, pots
+const int INTS_PIN = 26; // set the analog input for fm_intensity
+const int RATE_PIN = 2; // set the analog input for mod rate
+const int MODR_PIN = 27; // set the analog input for mod ratio
 
-#include "font.h"
-#include "helvnCB6pt7b.h"
-#define myfont helvnCB6pt7b // Org_01 looks better but is small.
+// encoder related 
+#include <RotaryEncoder.h>
 const int encoderA_pin = 19;
 const int encoderB_pin = 18;
 const int encoderSW_pin = 28;
-const int oled_sda_pin = 20;
-const int oled_scl_pin = 21;
-const int oled_i2c_addr = 0x3C;
-const int dw = 128;
-const int dh = 64;
-#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
 
-// encoder
 RotaryEncoder encoder(encoderB_pin, encoderA_pin, RotaryEncoder::LatchMode::FOUR3);
 
 void checkEncoderPosition() {
   encoder.tick();   // call tick() to check the state.
 }
+
+// display related
+const int oled_sda_pin = 20;
+const int oled_scl_pin = 21;
+const int oled_i2c_addr = 0x3C;
+const int dw = 128;
+const int dh = 64;
+
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+//Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
+//#include <Adafruit_SSD1306.h>
+
+#include <Adafruit_SH110X.h>
+Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, &Wire);
+#define WHITE SH110X_WHITE
+
+#include "font.h"
+#include "helvnCB6pt7b.h"
+#define myfont helvnCB6pt7b // Org_01 looks better but is small.
+
+enum {
+  MODE_PLAY = 0,
+  MODE_CONFIG,
+  MODE_COUNT   // how many modes we got
+};
+
+int display_mode = 0;
+uint8_t display_repeats = 0;
 
 // variables for UI state management
 int encoder_pos_last = 0;
@@ -86,6 +109,7 @@ uint32_t step_push_millis;
 bool encoder_held = false;
 
 // the somewhat flake code from my pikobeats version
+// pot locking and sample averaging
 
 // pots
 #define NPOTS 2 // number of pots
@@ -101,7 +125,7 @@ uint32_t pot_timer; // reading pots too often causes noise
 #define POT_MAX 1019 // A/D may not read max value of 1023 so use a bit smaller value for map() function
 
 
-// buttons
+// button handling / led handling 
 
 #define NUM_BUTTONS 9 // 8 buttons plus USR button on VCC-GND board
 #define SHIFT 8 // index of "shift" USR button 
@@ -109,22 +133,12 @@ uint8_t debouncecnt[NUM_BUTTONS] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; // debounce coun
 bool button[NUM_BUTTONS] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; // key active flags
 int led[8] = {LED0, LED1, LED2, LED3, LED4, LED5, LED6, LED7};
 int buttons[NUM_BUTTONS] = {BUTTON0, BUTTON1, BUTTON2, BUTTON3, BUTTON4, BUTTON5, BUTTON6, BUTTON7, SHIFT};
-enum {
-  MODE_PLAY = 0,
-  MODE_CONFIG,
-  MODE_COUNT   // how many modes we got
-};
 
-int display_mode = 0;
-uint8_t display_repeats = 0;
 // flag all pot values as locked ie they have to change more than MIN_POT_CHANGE to register
 void lockpots(void) {
   for (int i = 0; i < NPOTS; ++i) potlock[i] = 1;
 }
 
-const int INTS_PIN = 26; // set the analog input for fm_intensity
-const int RATE_PIN = 2; // set the analog input for mod rate
-const int MODR_PIN = 27; // set the analog input for mod ratio
 
 // sample analog pot input and do filtering.
 // if pots are locked, change value only if movement is greater than MIN_POT_CHANGE
@@ -161,6 +175,7 @@ uint16_t readpot(uint8_t potnum) {
   }
   return val;
 }
+
 // scan buttons
 bool scanbuttons(void)
 {
@@ -234,6 +249,7 @@ void display_value(int16_t value) {
   }
   display_timer = millis();
 }
+
 // display functions
 typedef struct {
   int x;
@@ -257,15 +273,12 @@ const int gate_bar_width = 14;
 const int gate_bar_height = 4;
 
 
-bool debugging = true;
+// audio related defines
+
 float freqs[12] = { 261.63f, 277.18f, 293.66f, 311.13f, 329.63f, 349.23f, 369.99f, 392.00f, 415.30f, 440.00f, 466.16f, 493.88f};
-
-
-MIDI_CREATE_DEFAULT_INSTANCE();
 
 AutoMap kMapIntensity(0, 4095, 10, 800);
 AutoMap kMapModSpeed(0, 4095, 10, 10000);
-
 
 Oscil<COS2048_NUM_CELLS, AUDIO_RATE> aCarrier(COS2048_DATA);
 Oscil<COS2048_NUM_CELLS, AUDIO_RATE> aModulator(COS2048_DATA);
@@ -283,6 +296,8 @@ int carrier_freq;
 // envelope generator
 ADSR <CONTROL_RATE, AUDIO_RATE> envelope;
 
+// midi related
+MIDI_CREATE_DEFAULT_INSTANCE();
 #define LED 15 // shows if MIDI is being recieved
 
 void HandleNoteOn(byte channel, byte note, byte velocity) {
@@ -333,7 +348,9 @@ void setup() {
   Wire.setSCL(oled_scl_pin);
   Wire.begin();
 
-  if (!display.begin(SSD1306_SWITCHCAPVCC, oled_i2c_addr)) {
+  // SSD1306 --  or SH1106 in this case
+  //if (!display.begin(SSD1306_SWITCHCAPVCC, oled_i2c_addr)) {
+  if (!display.begin( oled_i2c_addr)) {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;) ;  // Don't proceed, loop forever
   }
@@ -414,7 +431,7 @@ void updateControl() {
 
 AudioOutput_t  updateAudio() {
   long modulation = aSmoothIntensity.next(fm_intensity) * aModulator.next();
-  return (int)((envelope.next() * aCarrier.phMod(modulation)) >> 8);
+  return (int)((envelope.next() * aCarrier.phMod(modulation)) );
 }
 
 

@@ -323,8 +323,8 @@ uint16_t readpot(uint8_t potnum) {
 // 80s only to 20, jungle to 29
 
 //we use a header per sample set
-//#include "80s.h"
-#include "beatbox.h"
+#include "80s.h"
+//#include "beatbox.h"
 //#include "bbox.h"
 //#include "angularj.h"
 
