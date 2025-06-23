@@ -1,19 +1,12 @@
 /*
-  (c) 2024 blueprint@poetaster.de
-  GPLv3
-
-  BASED in part on
-  Arduino Mozzi MIDI FM Synthesis 2
-  https://diyelectromusic.wordpress.com/2020/08/19/arduino-fm-midi-synthesis-with-mozzi-part-2/
-
-      MIT License
-      Copyright (c) 2020 diyelectromusic (Kevin)
-
-  Using principles from the following Arduino tutorials:
-    Arduino MIDI Library - https://github.com/FortySevenEffects/arduino_midi_library
-    Mozzi Library        - https://sensorium.github.io/Mozzi/
-
-  Much of this code is based on the Mozzi example Knob_LightLevel_x2_FMsynth (C) Tim Barrass
+  (c) 2025 blueprint@poetaster.de GPLv3
+   
+   Based on  mi_Ugens, Copyright (c) 2020 Volker Böhm. All rights reserved. GPLv3
+   https://vboehm.net
+      
+   Mutable Instruments sources, including the stmlib, tides, plaits elements and braids libs are
+   MIT License
+   Copyright (c)  2020 (emilie.o.gillet@gmail.com)
 */
 
 bool debugging = true;
@@ -162,7 +155,7 @@ bool TimerHandler0(struct repeating_timer *t) {
   bool sync = true;
   if ( DAC.availableForWrite() ) {
     for (size_t i = 0; i < BLOCK_SIZE; i++) {
-      DAC.write( voices[0].pd.buffer[i] , sync ); 
+      DAC.write( voices[0].pd.buffer[i], sync); 
     }
     counter =  1;
   }
@@ -289,6 +282,9 @@ void setup() {
   }
   displaySplash();
 
+  // let's get more resolution
+  analogReadResolution(12);
+  
   pinMode(BUTTON0, INPUT_PULLUP);
   pinMode(BUTTON1, INPUT_PULLUP);
   pinMode(BUTTON2, INPUT_PULLUP);
@@ -313,7 +309,8 @@ void setup() {
 
   pinMode(LED, OUTPUT);
 
-
+  pinMode(23, OUTPUT); // thi is to switch to PWM for power to avoid ripple noise
+  digitalWrite(23, HIGH);
 
   // init the braids voices
   initVoices();
@@ -454,8 +451,8 @@ void updateControl() {
   int p2 = potvalue[1]; // analogRead(INTS_PIN); // value is 0-4065
 
 
-  morph_in = (float)p1 / 1000.0f; //map(p1, 0, 4065, 0.0, 1.0); // IN(2);
-  timbre_in = (float)p2 / 1000.0f; //map(p2, 0, 4065, 0.0, 1.0); //IN(3);
+  morph_in = (float)p1 / 4095.0f; //map(p1, 0, 4065, 0.0, 1.0); // IN(2);
+  timbre_in = (float)p2 / 4095.0f; //map(p2, 0, 4065, 0.0, 1.0); //IN(3);
   CONSTRAIN(morph_in, 0.0f, 1.0f);
   CONSTRAIN(timbre_in, 0.0f, 1.0f);
   scanbuttons();
@@ -540,6 +537,7 @@ void updateBraidsAudio() {
   uint8_t shape = (int)(engine_in);
   if (shape >= braids::MACRO_OSC_SHAPE_LAST)
     shape -= braids::MACRO_OSC_SHAPE_LAST;
+    
   osc->set_shape(static_cast<braids::MacroOscillatorShape>(shape));
 
   bool trigger = (trigger_in != 0.0);
@@ -674,15 +672,9 @@ void loop1() {
   // now, after buttons check if only encoder moved and no buttons
   // this is broken by mozzi, sigh.
   if (! anybuttonpressed && encoder_delta) {
-    if (encoder_delta > 1) {
-      harm_in = harm_in + 0.03f;
-      CONSTRAIN(harm_in, 0.0f, 1.0f);
-
-    } else {
-      harm_in = harm_in - 0.03f;
-      CONSTRAIN(harm_in, 0.0f, 1.0f);
-
-    }
+    float turn = encoder_delta * 0.01f;
+    harm_in = harm_in + turn;
+    
     //display_value(RATE_value - 50); // this is wrong, bro :)
   }
 

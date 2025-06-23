@@ -598,12 +598,12 @@ void loop() {
 
       // look up drum trigger pattern encoder play modes
       if ( (encoder_pos != encoder_pos_last ) && ! button[8] && display_mode == 0) {
-        rp2040.idleOtherCore();
+        //rp2040.idleOtherCore();
         int result = voice[i].sample + encoder_delta;
         if (result >= 0 && result <= NUM_SAMPLES - 1) {
           voice[i].sample = result;
         }
-        rp2040.resumeOtherCore();
+        //rp2040.resumeOtherCore();
 
       }
 

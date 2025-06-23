@@ -11,6 +11,7 @@ The firmware directory includes a number of types of firmware. You'll be able to
 
 # firmwares
 Include examples for
+ *  NEW 05.2025 a port of Mutable instruments braids to scarp. Requires the STMLIB and BRAIDS libraries from https://github.com/poetaster/arduinoMI/
  *  Mozzi library based c++. 
  * Arduino PWM pikobeats variant. 
  * pikocore  The scarp branch here: https://github.com/poetaster/pikocore/tree/scarp allows you to play the pikocore firmware, with some tweaks to adapt to this hardware layout.
