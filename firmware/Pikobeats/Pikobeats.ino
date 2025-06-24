@@ -323,10 +323,10 @@ uint16_t readpot(uint8_t potnum) {
 // 80s only to 20, jungle to 29
 
 //we use a header per sample set
-#include "80s.h"
+//#include "80s.h"
 //#include "beatbox.h"
 //#include "bbox.h"
-//#include "angularj.h"
+#include "angularj.h"
 
 // we can have an arbitrary number of samples but you will run out of memory at some point
 // sound sample files are 22khz 16 bit signed PCM format - see the sample include files for examples
@@ -599,6 +599,7 @@ void loop() {
       // look up drum trigger pattern encoder play modes
       if ( (encoder_pos != encoder_pos_last ) && ! button[8] && display_mode == 0) {
         //rp2040.idleOtherCore();
+        voice[i].isPlaying = false;
         int result = voice[i].sample + encoder_delta;
         if (result >= 0 && result <= NUM_SAMPLES - 1) {
           voice[i].sample = result;
