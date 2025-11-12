@@ -1,5 +1,5 @@
 #pragma once
-#define NUMBER_OF_STEPS 15
+#define NUMBER_OF_STEPS 16
 
 class euclid {
 
@@ -19,11 +19,11 @@ public:
   void setTextSequence();
   char getTextSequence();
   void resetSequence();
-  char textSequence[NUMBER_OF_STEPS+1];
+  char textSequence[NUMBER_OF_STEPS];
   
 private:
 
-  bool euclidianPattern[NUMBER_OF_STEPS+1];
+  bool euclidianPattern[NUMBER_OF_STEPS];
 
   uint8_t stepCounter;
   uint8_t repeatCounter;

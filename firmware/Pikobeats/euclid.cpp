@@ -5,7 +5,7 @@ void euclid::generateSequence( uint8_t fills, uint8_t steps){
   numberOfSteps=steps;
   if(fills>steps) fills=steps;
   if(fills<=steps){
-  for(int i=0;i<16;i++) euclidianPattern[i]=false;
+  for(int i=0;i<NUMBER_OF_STEPS;i++) euclidianPattern[i]=false;
     if(fills!=0){
       euclidianPattern[0]=true;
       float coordinate=(float)steps/(float)fills;
@@ -28,7 +28,7 @@ void euclid::generateRandomSequence( uint8_t fills, uint8_t steps){
     numberOfFills=fills;
     if(fills>steps) fills=steps;
     if(fills<=steps){
-    for(int i=0;i<16;i++) euclidianPattern[i]=false;
+    for(int i=0;i<NUMBER_OF_STEPS;i++) euclidianPattern[i]=false;
     //euclidianPattern[17]=true;
       if(fills!=0){
       //  euclidianPattern[0]=true;
@@ -55,17 +55,19 @@ void euclid::generateRandomSequence( uint8_t fills, uint8_t steps){
   euclid::setTextSequence();
 }
 
-void euclid::rotate(uint8_t _steps){
-  //Serial.println(this->textSequence);
-  for(int i=0;i<_steps;i++){
-    bool temp=euclidianPattern[numberOfSteps-1];
-    for(int j=numberOfSteps;j>0;j--){
-      euclidianPattern[j]=euclidianPattern[j-1];
+void euclid::rotate(uint8_t _steps) {
+
+  for (int i = 0; i < _steps; i++) {
+
+    bool temp = this->euclidianPattern[numberOfSteps - 1];
+
+    for (int j = numberOfSteps; j > 0; j--) {
+      euclidianPattern[j] = euclidianPattern[j - 1];
     }
-    euclidianPattern[0]=temp;
+    euclidianPattern[0] = temp;
   }
-  setTextSequence();
-    //Serial.println(this->textSequence);
+  euclid::setTextSequence();
+
 }
 
 bool euclid::getStep(uint8_t _step){
@@ -98,18 +100,19 @@ void euclid::setTextSequence(){
 char euclid::getTextSequence(){
   return *textSequence;
 }
-void euclid::doStep(){
-  if(stepCounter<(numberOfSteps-1)) { 
-    stepCounter++;
-    
-  } else { 
-    stepCounter=0;
-    if (repeats>0) repeatCounter++;
-    if (repeatCounter > repeats && repeats != 0 ) {
+void euclid::doStep() {
+  if (this->stepCounter < (numberOfSteps - 1)) {
+    this->stepCounter++;
+
+  } else {
+    ;
+    this->stepCounter = 0;
+    if (this->repeats > 0) this->repeatCounter++;
+
+    if (this->repeatCounter >= this->repeats) {
       //this->generateSequence(this->numberOfSteps, this->numberOfFills);
-      rotate(4);
-      //Serial.println(this->textSequence);
-      repeatCounter = 0;
+      //euclid::rotate(1);
+      this->repeatCounter = 0;
     }
   }
 }

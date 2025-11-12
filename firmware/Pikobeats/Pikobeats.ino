@@ -31,7 +31,7 @@
   samples for beatbox from:
   giddster ( https://freesound.org/people/giddster/ )
   AlienXXX ( https://freesound.org/people/AlienXXX/
-  
+
   The euclid code originates at:
   https://github.com/bastl-instruments/one-chip-modules/blob/master/EUCLID/EUCLID.ino
 
@@ -87,7 +87,7 @@ RunningAverage ra;
 volatile int clk_display;
 uint32_t clk_sync_last;
 
-// clock timer 
+// clock timer
 #define TIMER_INTERRUPT_DEBUG         0
 #define _TIMERINTERRUPT_LOGLEVEL_     4
 // Can be included as many times as necessary, without `Multiple Definitions` Linker Error
@@ -116,10 +116,10 @@ bool sync = false; // used to detect if we have input sync
 
 
 bool TimerHandler0(struct repeating_timer *t)
-{  
-  (void) t;  
+{
+  (void) t;
   //if( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin) && debounceCounter >= DEBOUNCING_INTERVAL_MS)
-  if( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin))
+  if ( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin))
   {
     //min time between pulses has passed
     // calculate bpm
@@ -131,9 +131,9 @@ bool TimerHandler0(struct repeating_timer *t)
     sync = true;
 
 #if (TIMER_INTERRUPT_DEBUG > 0)
-      Serial.print("rt = "); Serial.print(RPM);
-      //Serial.print("RPM = "); Serial.print(ra.Value());
-      Serial.print(", rotationTime ms = "); Serial.println(rotationTime * TIMER0_INTERVAL_MS);
+    Serial.print("rt = "); Serial.print(RPM);
+    //Serial.print("RPM = "); Serial.print(ra.Value());
+    Serial.print(", rotationTime ms = "); Serial.println(rotationTime * TIMER0_INTERVAL_MS);
 #endif
     rotationTime = 0;
     debounceCounter = 0;
@@ -148,9 +148,9 @@ bool TimerHandler0(struct repeating_timer *t)
     sync = false ;// flag for seq.h
 
     RPM = 0;
-#if (TIMER_INTERRUPT_DEBUG > 0)   
+#if (TIMER_INTERRUPT_DEBUG > 0)
     Serial.print("RPM = "); Serial.print(RPM); Serial.print(", rotationTime = "); Serial.println(rotationTime);
-#endif  
+#endif
     rotationTime = 0;
   }
   else
@@ -267,8 +267,8 @@ uint8_t filter_q = 0;
 
 //#define MONITOR_CPU  // define to monitor Core 2 CPU usage on pin CPU_USE
 
-#define SAMPLERATE 22050
-//#define SAMPLERATE 44100 // VCC-GND 16mb flash boards won't overclock fast enough for 44khz ?
+//#define SAMPLERATE 22050
+#define SAMPLERATE 44100 // VCC-GND 16mb flash boards won't overclock fast enough for 44khz ?
 
 PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
@@ -323,10 +323,14 @@ uint16_t readpot(uint8_t potnum) {
 // 80s only to 20, jungle to 29
 
 //we use a header per sample set
+
 //#include "80s.h"
 //#include "beatbox.h"
 //#include "bbox.h"
-#include "angularj.h"
+//#include "angularj.h"
+#include "mixp.h"
+// pico 2 only
+//#include "mix.h" 
 
 // we can have an arbitrary number of samples but you will run out of memory at some point
 // sound sample files are 22khz 16 bit signed PCM format - see the sample include files for examples
@@ -456,15 +460,15 @@ void setup() {
   Serial.print(F("\nStarting RPM_Measure on ")); Serial.println(BOARD_NAME);
   Serial.println(RPI_PICO_TIMER_INTERRUPT_VERSION);
   Serial.print(F("CPU Frequency = ")); Serial.print(F_CPU / 1000000); Serial.println(F(" MHz"));
-    // Interval in microsecs
-  if(ITimer0.attachInterruptInterval(TIMER0_INTERVAL_MS * 1000, TimerHandler0))
+  // Interval in microsecs
+  if (ITimer0.attachInterruptInterval(TIMER0_INTERVAL_MS * 1000, TimerHandler0))
   {
     Serial.print(F("Starting  ITimer0 OK, millis() = ")); Serial.println(millis());
   }  else {
     Serial.println(F("Can't set ITimer0. Select another freq. or timer"));
-   }
-  Serial.flush();  
-  
+  }
+  Serial.flush();
+
   // Additions
   // ENCODER
   pinMode(encoderA_pin, INPUT_PULLUP);
@@ -477,7 +481,7 @@ void setup() {
   Wire.setSCL(oled_scl_pin);
   Wire.begin();
 
-  // SSD1306 -- 
+  // SSD1306 --
   //if (!display.begin(SSD1306_SWITCHCAPVCC, oled_i2c_addr)) {
   if (!display.begin( oled_i2c_addr)) {
     Serial.println(F("SSD1306 allocation failed"));
@@ -517,10 +521,10 @@ void setup() {
 
   pinMode(CLOCKOUT, OUTPUT);
   pinMode(CLOCKIN, INPUT_PULLUP);
-  
+
   pinMode(23, OUTPUT); // thi is to switch to PWM for power to avoid ripple noise
   digitalWrite(23, HIGH);
-  
+
   // set up Pico PWM audio output
   DAC.setBuffers(4, 128); // DMA buffers
   DAC.begin(SAMPLERATE);
@@ -537,7 +541,7 @@ void setup() {
   */
   // set up runningavg
   ra.Init(5);
-  
+
   seq[0].trigger->generateRandomSequence(8, 16);
   seq[2].trigger->generateRandomSequence(3, 16);
   seq[5].trigger->generateRandomSequence(5, 16);
@@ -569,7 +573,7 @@ void loop() {
     if ((now - encoder_push_millis) > 25 && ! encoder_delta ) {
       if ( !encoder_held ) {
         encoder_held = true;
-        display_mode = display_mode+1;
+        display_mode = display_mode + 1;
         if ( display_mode > 2) { // switched back to play mode
           display_mode = 0;
           //configure_sequencer();
@@ -593,64 +597,82 @@ void loop() {
 
       // a track button is pressed
       current_track = i; // keypress selects track we are working on
-      
+
       //  if ((!potlock[1]) || (!potlock[2])) seq[i].trigger=euclid(16,map(potvalue[1],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS),map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1));
 
       // look up drum trigger pattern encoder play modes
       if ( (encoder_pos != encoder_pos_last ) && ! button[8] && display_mode == 0) {
-        //rp2040.idleOtherCore();
         voice[i].isPlaying = false;
-        int result = voice[i].sample + encoder_delta;
-        if (result >= 0 && result <= NUM_SAMPLES - 1) {
-          voice[i].sample = result;
+        // here we rotate at offset since we're now arranging sample sets in groups of 4
+        // currently only really works with 'mix.h'
+        int result ;
+        if (encoder_delta > 0) {
+          result = voice[current_track].sample + 8 ;
+        } else {
+          result = voice[current_track].sample - 8 ;
         }
-        //rp2040.resumeOtherCore();
-
+        if (result >= 0 && result <= NUM_SAMPLES - 1) {
+          voice[current_track].sample = result;
+        }
       }
 
       if ( (encoder_pos != encoder_pos_last ) && display_mode == 1 ) {
-        //uint8_t re = seq[i].trigger->getRepeats() + encoder_delta;
-        seq[i].trigger->setRepeats(encoder_delta);
-        display_repeats = seq[i].trigger->getRepeats();
+        
+        int repeats = seq[current_track].repeats;
+        repeats = constrain( (repeats + encoder_delta), 0, 5);
+        seq[i].repeats = repeats;
+        
+        // repeats are actually now OFFSET. the repeats mechanism with rotate
+        // was disturbing
+        
+        display_repeats = repeats;
+        seq[i].trigger->rotate(repeats);
+        display_pat = (String) seq[i].trigger->textSequence;
+        
+        // if offset is 0, reset
+        if (repeats == 0) {
+          seq[i].trigger->generateSequence(seq[i].fills, 16);
+        }
 
       }
 
       // change pitch on pot 0
-      if (!potlock[0] && ( display_mode == 0 || display_mode ==2) ){ // change sample if pot has moved enough
+      if (!potlock[0] && ( display_mode == 0 || display_mode == 2) ) { // change sample if pot has moved enough
         uint16_t pitch = (uint16_t)(map(potvalue[0], POT_MIN, POT_MAX, 2048, 8192));
         // divisible by 2 and it won't click
-        if (pitch%2 == 0) { 
+        if (pitch % 2 == 0) {
           voice[current_track].sampleincrement = pitch;  // change sample pitch if pot has moved enough
-          display_pitch = map(pitch, 2048, 8192, 0,100);
+          display_pitch = map(pitch, 2048, 8192, 0, 100);
         }
       }
-
-      // change volume on pot 1
+      
+      // change sample volume level if pot has moved enough
       if (!potlock[1] && display_mode == 0) {
         int16_t level = (int16_t)(map(potvalue[1], POT_MIN, POT_MAX, 0, 1000));
         voice[current_track].level = level;
-        display_vol = level/10;
-        // change sample volume level if pot has moved enough
+        display_vol = level / 10;
+        
       }
       if (!potlock[0] && display_mode == 1 ) {
+        // set track euclidean triggers, random, if either pot has moved enough
         //filter_fc = potvalue[0] * (LPF_MAX + 10) / 4096;
         seq[i].fills = map(potvalue[0], POT_MIN, POT_MAX, 0, 16);
-        seq[i].trigger->generateRandomSequence(seq[i].fills, 15);
+        seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
         display_pat = (String) seq[i].trigger->textSequence;
       }
 
       // set track euclidean triggers if either pot has moved enough
       if (!potlock[1] && ! button[8] && display_mode == 1) {
         seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
-        seq[i].trigger->generateSequence(seq[i].fills, 15);
+        seq[i].trigger->generateSequence(seq[i].fills, 16);
         seq[i].trigger->resetSequence(); // set to 0
         display_pat = (String) seq[i].trigger->textSequence;
-        
+
       }
       //trig/retrig play
       if ( display_mode == 2 && i < 8 && voice[current_track].isPlaying == false) {
-         voice[current_track].sampleindex = 0; // trigger sample for this track
-         voice[current_track].isPlaying = true;
+        voice[current_track].sampleindex = 0; // trigger sample for this track
+        voice[current_track].isPlaying = true;
       }
       /*
         if (!potlock[2]) {
@@ -686,7 +708,7 @@ void loop() {
   if (!anybuttonpressed) lockpots();
 
   // MIDI.read();  // do serial MIDI
-  
+
   scanbuttons();
 
   // reading A/D seems to cause noise in the audio so don't do it too often
@@ -717,13 +739,13 @@ void loop1() {
 
   // check if we have a new bpm value from interrupt
   // since debouncing is flaky, force more than 1 bpm diff
-    //if (ra.Value() != bpm && ra.Value() > 49) {
-  if (RPM > bpm + 1 || RPM < bpm -1 && RPM > 49) {
-        //reset = true; //reset seq
-        bpm = RPM;
+  //if (ra.Value() != bpm && ra.Value() > 49) {
+  if (RPM > bpm + 1 || RPM < bpm - 1 && RPM > 49) {
+    //reset = true; //reset seq
+    bpm = RPM;
   }
   do_clocks();  // process sequencer clocks
-  
+
 
   int32_t newsample, samplesum = 0, filtersum;
   uint32_t index;
@@ -795,7 +817,7 @@ const int gate_bar_height = 4;
 void displayUpdate() {
   display.clearDisplay();
   //display.setFont(&myfont); //don't need to call this every time!
-  display.cp437(true); 
+  display.cp437(true);
   //display.setTextColor(WHITE, 0);
   /*
     for (int i = 0; i < 8; i++) {
@@ -841,28 +863,28 @@ void displayUpdate() {
   display.setCursor(trans_text_pos.x, trans_text_pos.y);
   display.print("VOL: ");
   display.print(display_vol);
-  
+
   // seq info / meta
   display.setCursor(seq_info_pos.x, seq_info_pos.y);
-  display.print("REPS: ");
+  display.print("OFSET: ");
   display.print(display_repeats);
-  
+
   // seqno
   display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
   display.print("PITCH: ");
   display.print(display_pitch);  // user sees 1-8
-  
+
   // seq info / meta
   display.setCursor(play_text_pos.x, play_text_pos.y);
   display.print("MODE: ");
   display.print(display_mode);
-  
+
   // although cool, can't read 01 in org font
   //display.setFont(&bigfont); //don't need to call this every time!
   display.setCursor(pat_text_pos.x, pat_text_pos.y);
   display.print("PAT: ");
   display.print((String)display_pat);
-  
+
   // play/pause
   //display.setCursor(play_text_pos.x, play_text_pos.y);
   //display.print(seqr.playing ? " >" : "[]");
