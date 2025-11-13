@@ -249,10 +249,10 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 */
 
 
-#include "80s.h"
+//#include "80s.h"
 
 //#include "angularj.h"
-//#include "mixp.h"
+#include "mixp.h"
 //#include "beatbox.h"
 //#include "bbox.h"
 
@@ -355,8 +355,9 @@ void setup() {
 
   // try to retrieve saved preset if not, init slots
   EEPROM.begin(2048); // the 8 slots we save now are only 384 bytes, but it'll probably grow
-
-
+  delay(250);
+  selected_preset = EEPROM.read(0); // read first position, stored preset
+  if (debug) Serial.print("selected ");
 
   /*
     if (selected_preset <8 && selected_preset > -1) {
@@ -375,7 +376,7 @@ void setup() {
 
   display_value(NUM_SAMPLES); // show number of samples on the display
   starting = true;
-  delay(1000);
+  delay(500);
 }
 
 
@@ -386,11 +387,10 @@ void loop() {
 
   // we read the first byte to try to get a preset, stored 0-7
   if (starting) {
-    selected_preset = EEPROM.read(0); // read first position, stored preset
-    if (debug) Serial.print("selected ");
-    if (debug) Serial.println(selected_preset);
-    if (selected_preset > 0 && selected_preset < 8) {
-      loadFromPreset(selected_preset);
+    //selected_preset = EEPROM.read(0); // read first position, stored preset
+    loadLastPreset(); // sets selected_preset from base eeprom save point
+    if (selected_preset > -1 && selected_preset < 8) {
+      loadFromEEPROM(selected_preset);
     } else {
       loadFromPreset(0);
     }
@@ -556,7 +556,7 @@ void loop() {
   } else if (! anybuttonpressed && encoder_delta && display_mode == 3) {
     // in load save mode, switch between load and save
     if (encoder_delta > 0) {
-    loadSave = 1 ;
+      loadSave = 1 ;
     } else {
       loadSave = 0;
     }
