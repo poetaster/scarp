@@ -426,7 +426,7 @@ void loop() {
       }
     } else if ( (now - encoder_push_millis) > 100 && ! encoder_delta && display_mode == 3 ) {
       // or change  between load and save preset
-      loadSave = !loadSave ; // toggle between load and save
+      //loadSave = !loadSave ; // toggle between load and save
     }
 
     if (step_push_millis > 0) { // we're pushing a step key too
@@ -486,12 +486,14 @@ void loop() {
         if (loadSave == 0 && ! loading) {
           loading = true;
           selected_preset = current_track;
+          saveCurrentPreset(selected_preset); // save it
           saveToEEPROM(current_track);
 
         } else if (loadSave == 1 && ! loading) {
-          loading = true;
-          selected_preset = current_track;
-          loadFromEEPROM(current_track);
+          loading = true; // make sure audio is off
+          selected_preset = current_track; // set selected preset
+          saveCurrentPreset(selected_preset); // save it
+          loadFromEEPROM(current_track); // load it
 
         }
       }
@@ -553,7 +555,11 @@ void loop() {
     display_value(bpm - 50);
   } else if (! anybuttonpressed && encoder_delta && display_mode == 3) {
     // in load save mode, switch between load and save
-    loadSave = !loadSave ;
+    if (encoder_delta > 0) {
+    loadSave = 1 ;
+    } else {
+      loadSave = 0;
+    }
   }
 
   /// only set new pos last after buttons have had a chance to use the delta
@@ -598,53 +604,6 @@ void loop() {
   }
 }
 
-/* display mode
-   else if (mode == 1) {
-
-    // display load save;
-
-    // lock pots
-    lockPots();
-
-    // keep drum loop running
-    drummerLoop();
-
-    // encoder moved
-    if (delta != 0) {
-      int old_preset = selected_preset; // store it just in case we need it
-      int preset = constrain( (display_preset + delta), 0, 19);
-
-      // load methods takes care of setting mode back to 0 for drums
-      // they also update the selected_preset & selected_slot vars
-      display_preset = preset;
-      loadDisplayUpdate();
-
-    }
-    //  button pushed and we have a new preset
-    if ( save_now && display_preset != selected_preset) {
-
-      if (display_preset < 10 ) {
-        selected_preset = display_preset;
-        loadFromPreset(selected_preset);
-      } else {
-        selected_slot = display_preset - 10; // we're using a simple offset to keep the screen simple
-        selected_preset = display_preset;
-        loadFromEEPROM(selected_slot);
-      }
-      tempo = currentConfig.tempo;
-      kit = currentConfig.kit;
-      saveCurrentPreset(selected_preset);
-      save_now = false;
-      mode = 0;
-      if (debug) Serial.println(currentConfig.kit);
-      if (debug) Serial.println(currentConfig.tempo);
-      if (tempo != currentConfig.tempo) tempo = currentConfig.tempo;
-      if (kit != currentConfig.kit) kit = currentConfig.kit;
-    }
-
-
-  }
-*/
 
 
 // second core setup
@@ -656,61 +615,61 @@ void setup1() {
 // second core calculates samples and sends to DAC
 void loop1() {
 
-  // check if we have a new bpm value from interrupt
-  // since debouncing is flaky, force more than 1 bpm diff
-  //if (ra.Value() != bpm && ra.Value() > 49) {
   if (RPM > bpm + 1 || RPM < bpm - 1 && RPM > 49) {
     //reset = true; //reset seq
     bpm = RPM;
   }
-  do_clocks();  // process sequencer clocks
+  if (! loading )
+  {
+    do_clocks();  // process sequencer clocks when no file saving operations are under way
 
 
-  int32_t newsample, samplesum = 0, filtersum;
-  uint32_t index;
-  int16_t samp0, samp1, delta, tracksample;
 
-  /* oct 22 2023 resampling code
-     to change pitch we step through the sample by .5 rate for half pitch up to 2 for double pitch
-     sample.sampleindex is a fixed point 20:12 fractional number
-     we step through the sample array by sampleincrement - sampleincrement is treated as a 1 bit integer and a 12 bit fraction
-     for sample lookup sample.sampleindex is converted to a 20 bit integer which limits the max sample size to 2**20 or about 1 million samples, about 45 seconds
-  */
-  for (int track = 0; track < NTRACKS; ++track) { // look for samples that are playing, scale their volume, and add them up
-    tracksample = voice[track].sample; // precompute for a little more speed below
-    index = voice[track].sampleindex >> 12; // get the integer part of the sample increment
-    if (index >= sample[tracksample].samplesize) voice[track].isPlaying = false; // have we played the whole sample?
-    if (voice[track].isPlaying) { // if sample is still playing, do interpolation
-      samp0 = sample[tracksample].samplearray[index]; // get the first sample to interpolate
-      samp1 = sample[tracksample].samplearray[index + 1]; // get the second sample
-      delta = samp1 - samp0;
-      newsample = (int32_t)samp0 + ((int32_t)delta * ((int32_t)voice[track].sampleindex & 0x0fff)) / 4096; // interpolate between the two samples
-      //samplesum+=((int32_t)samp0+(int32_t)delta*(sample[i].sampleindex & 0x0fff)/4096)*sample[i].play_volume;
-      samplesum += (newsample * (127 * voice[track].level)) / 1000;
-      voice[track].sampleindex += voice[track].sampleincrement; // add step increment
+    int32_t newsample, samplesum = 0, filtersum;
+    uint32_t index;
+    int16_t samp0, samp1, delta, tracksample;
+
+    /* oct 22 2023 resampling code
+       to change pitch we step through the sample by .5 rate for half pitch up to 2 for double pitch
+       sample.sampleindex is a fixed point 20:12 fractional number
+       we step through the sample array by sampleincrement - sampleincrement is treated as a 1 bit integer and a 12 bit fraction
+       for sample lookup sample.sampleindex is converted to a 20 bit integer which limits the max sample size to 2**20 or about 1 million samples, about 45 seconds
+    */
+    for (int track = 0; track < NTRACKS; ++track) { // look for samples that are playing, scale their volume, and add them up
+      tracksample = voice[track].sample; // precompute for a little more speed below
+      index = voice[track].sampleindex >> 12; // get the integer part of the sample increment
+      if (index >= sample[tracksample].samplesize) voice[track].isPlaying = false; // have we played the whole sample?
+      if (voice[track].isPlaying) { // if sample is still playing, do interpolation
+        samp0 = sample[tracksample].samplearray[index]; // get the first sample to interpolate
+        samp1 = sample[tracksample].samplearray[index + 1]; // get the second sample
+        delta = samp1 - samp0;
+        newsample = (int32_t)samp0 + ((int32_t)delta * ((int32_t)voice[track].sampleindex & 0x0fff)) / 4096; // interpolate between the two samples
+        //samplesum+=((int32_t)samp0+(int32_t)delta*(sample[i].sampleindex & 0x0fff)/4096)*sample[i].play_volume;
+        samplesum += (newsample * (127 * voice[track].level)) / 1000;
+        voice[track].sampleindex += voice[track].sampleincrement; // add step increment
+      }
     }
+
+    samplesum = samplesum >> 7; // adjust for play_volume multiply above
+    if  (samplesum > 32767) samplesum = 32767; // clip if sample sum is too large
+    if  (samplesum < -32767) samplesum = -32767;
+
+    /*
+        // filter
+      if (filter_fc <=  LPF_MAX) {
+          filtersum = (uint8_t)filter_lpf( (int64_t)samplesum, filter_fc ,filter_q);
+       }
+    */
+
+#ifdef MONITOR_CPU
+    digitalWrite(CPU_USE, 0); // low - CPU not busy
+#endif
+    // write samples to DMA buffer - this is a blocking call so it stalls when buffer is full
+    DAC.write(int16_t(samplesum)); // left
+
+#ifdef MONITOR_CPU
+    digitalWrite(CPU_USE, 1); // hi = CPU busy
+#endif
   }
-
-  samplesum = samplesum >> 7; // adjust for play_volume multiply above
-  if  (samplesum > 32767) samplesum = 32767; // clip if sample sum is too large
-  if  (samplesum < -32767) samplesum = -32767;
-
-  /*
-      // filter
-    if (filter_fc <=  LPF_MAX) {
-        filtersum = (uint8_t)filter_lpf( (int64_t)samplesum, filter_fc ,filter_q);
-     }
-  */
-
-#ifdef MONITOR_CPU
-  digitalWrite(CPU_USE, 0); // low - CPU not busy
-#endif
-  // write samples to DMA buffer - this is a blocking call so it stalls when buffer is full
-  DAC.write(int16_t(samplesum)); // left
-
-#ifdef MONITOR_CPU
-  digitalWrite(CPU_USE, 1); // hi = CPU busy
-#endif
-
 
 }
