@@ -44,18 +44,18 @@
 #include "hardware/sync.h"
 #include "hardware/structs/ioqspi.h"
 #include "hardware/structs/sio.h"
-//#include "MIDI.h"
-#include <PWMAudio.h>
-#include "io.h"
-#include "euclid.h"
-#include "filter.h"
 
-// additions
+#include <EEPROM.h>
+#include <PWMAudio.h>
 #include <Wire.h>
 #include <RotaryEncoder.h>
-//#include <Bounce2.h>
 
+#include "io.h"
+#include "euclid.h"
 
+//#include "filter.h"
+
+bool debug = true;
 
 // display setup works with adafruit SSD1306 or SH1106G
 const int dw = 128;
@@ -70,27 +70,28 @@ const int oled_i2c_addr = 0x3C;
 //Adafruit_SSD1306 display(dw, dh, &Wire, OLED_RESET);
 //#define SCREEN_ADDRESS 0x3D ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
-
 #include <Adafruit_SH110X.h>
 Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, &Wire);
 #define WHITE SH110X_WHITE
-
 #include "font.h"
 #include "helvnCB6pt7b.h"
 #define myfont Org_01 //helvnCB6pt7b // Org_01 looks better but is small.
 #define bigfont helvnCB6pt7b
 
-// from pikocore for bpm calcs on clk input
-// this is unused, deprecate?
-#include "runningavg.h"
-RunningAverage ra;
-volatile int clk_display;
-uint32_t clk_sync_last;
+#define DISPLAY_TIME 2000 // time in ms to display numbers on LEDS
+int32_t display_timer;
 
-// clock timer
+
+// rotate trigger pattern
+uint16_t rightRotate(int shift, uint16_t value, uint8_t pattern_length) {
+  uint16_t mask = ((1 << pattern_length) - 1);
+  value &= mask;
+  return ((value >> shift) | (value << (pattern_length - shift))) & mask;
+}
+
+// clock timer we use for clk input and encoder input bpm setting
 #define TIMER_INTERRUPT_DEBUG         0
 #define _TIMERINTERRUPT_LOGLEVEL_     4
-// Can be included as many times as necessary, without `Multiple Definitions` Linker Error
 #include "RPi_Pico_TimerInterrupt.h"
 unsigned int SWPin = CLOCKIN;
 #define TIMER0_INTERVAL_MS       1
@@ -113,52 +114,47 @@ int clk_state = 0;
 int clk_hits = 0;
 uint32_t clk_sync_ms = 0;
 bool sync = false; // used to detect if we have input sync
+volatile int clk_display;
+uint32_t clk_sync_last;
 
 
 bool TimerHandler0(struct repeating_timer *t)
 {
   (void) t;
   //if( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin) && debounceCounter >= DEBOUNCING_INTERVAL_MS)
-  if ( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin))
-  {
+  if ( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin)) {
     //min time between pulses has passed
     // calculate bpm
     RPM = (float) ( 60000.0f / ( rotationTime * TIMER0_INTERVAL_MS ) / 2.0f );
-    //use running avg NOT volatile on timer
-    //ra.Update(RPM);
     clk_display = RPM;
     // these are for the sequencer
     sync = true;
 
 #if (TIMER_INTERRUPT_DEBUG > 0)
     Serial.print("rt = "); Serial.print(RPM);
-    //Serial.print("RPM = "); Serial.print(ra.Value());
     Serial.print(", rotationTime ms = "); Serial.println(rotationTime * TIMER0_INTERVAL_MS);
 #endif
     rotationTime = 0;
     debounceCounter = 0;
-  }
-  else
-  {
+  } else {
     debounceCounter++;
   }
-  if (rotationTime >= 1000)
-  {
+
+  if (rotationTime >= 1000) {
     // If idle, set RPM to 0, don't increase rotationTime
     sync = false ;// flag for seq.h
-
     RPM = 0;
 #if (TIMER_INTERRUPT_DEBUG > 0)
     Serial.print("RPM = "); Serial.print(RPM); Serial.print(", rotationTime = "); Serial.println(rotationTime);
 #endif
     rotationTime = 0;
-  }
-  else
-  {
+  } else {
     rotationTime++;
   }
+
   clk_state_last = digitalRead(SWPin);
   return true;
+
 }
 
 // begin hardware definitions
@@ -183,6 +179,15 @@ int encoder_pos_last = 0;
 int encoder_delta = 0;
 uint32_t encoder_push_millis;
 uint32_t step_push_millis;
+uint8_t selected_preset = 0;
+uint8_t selected_slot   = 0; // saving to
+
+// the display is offset + 1
+uint8_t display_preset = 0;
+uint8_t display_slot = 0;
+
+uint8_t loadSave = 0;
+bool loading = false;
 
 // currently not used
 int step_push = -1;
@@ -191,42 +196,8 @@ char seq_info[11];  // 10 chars + nul FIXME
 
 bool encoder_held = false;
 
-// pots
-#define NPOTS 2 // number of pots
-uint16_t potvalue[NPOTS]; // pot readings
-uint16_t lastpotvalue[NPOTS]; // old pot readings
-bool potlock[NPOTS]; // when pots are locked it means they must change by MIN_POT_CHANGE to register
-uint32_t pot_timer; // reading pots too often causes noise
-#define POT_SAMPLE_TIME 30 // delay time between pot reads
-#define MIN_POT_CHANGE 25 // locked pot reading must change by this in order to register
-#define MIN_COUNTS 8  // unlocked pot must change by this in order to register
-#define POT_AVERAGING 20 // analog sample averaging count 
-#define POT_MIN 4   // A/D may not read min value of 0 so use a bit larger value for map() function
-#define POT_MAX 1019 // A/D may not read max value of 1023 so use a bit smaller value for map() function
-
-
-// buttons
-
-#define NUM_BUTTONS 9 // 8 buttons plus USR button on VCC-GND board
-#define SHIFT 8 // index of "shift" USR button 
-uint8_t debouncecnt[NUM_BUTTONS] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; // debounce counters
-bool button[NUM_BUTTONS] = {0, 0, 0, 0, 0, 0, 0, 0, 0}; // key active flags
-int led[8] = {LED0, LED1, LED2, LED3, LED4, LED5, LED6, LED7};
-int buttons[NUM_BUTTONS] = {BUTTON0, BUTTON1, BUTTON2, BUTTON3, BUTTON4, BUTTON5, BUTTON6, BUTTON7, SHIFT};
-
-/* no MIDI for now
-  // MIDI stuff
-  uint8_t MIDI_Channel=10;  // default MIDI channel for percussion
-  struct SerialMIDISettings : public midi::DefaultSettings
-  {
-  static const long BaudRate = 31250;
-  };
-  // must use HardwareSerial for extra UARTs
-  HardwareSerial MIDISerial(2);
-
-  // instantiate the serial MIDI library
-  MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, MIDISerial, MIDI, SerialMIDISettings);
-*/
+// pots & buttons settings and functions
+#include "pots.h"
 
 
 enum {
@@ -237,219 +208,67 @@ enum {
 
 int display_mode = MODE_PLAY;
 uint8_t display_repeats = 0;
-uint8_t display_vol = 100;
-uint8_t display_pitch = 50;
+uint8_t display_vol = 175;
+uint8_t display_pitch = 128;
 String display_pat;
 
-// --- display details from picostep
-//
-typedef struct {
-  int x;
-  int y;
-  const char* str;
-} pos_t;
 
-const char* note_strs[] = { "C ", "C#", "D ", "D# ", "E ", "F ", "F#", "G ", "G#", "A ", "A#", "B ", "C " };
-
-int notenum_to_oct(int notenum) {
-  return (notenum / 12) - 2;
-}
-const char* notenum_to_notestr(int notenum) {
-  return note_strs[notenum % 12];
-}
-// END additions
-
-// from pikocore filter
-uint8_t filter_fc = LPF_MAX + 10;
-uint8_t hpf_fc = 0;
-uint8_t filter_q = 0;
-
+// from pikocore filter NOT used currently
+/*
+  uint8_t filter_fc = LPF_MAX + 10;
+  uint8_t hpf_fc = 0;
+  uint8_t filter_q = 0;
+*/
 
 //#define MONITOR_CPU  // define to monitor Core 2 CPU usage on pin CPU_USE
 
-//#define SAMPLERATE 22050
-#define SAMPLERATE 44100 // VCC-GND 16mb flash boards won't overclock fast enough for 44khz ?
+// setup audio hardware
+
+#define SAMPLERATE 22050
+//#define SAMPLERATE 44100 // VCC-GND 16mb flash boards won't overclock fast enough for 44khz ?
 
 PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
 
 
-// flag all pot values as locked ie they have to change more than MIN_POT_CHANGE to register
-void lockpots(void) {
-  for (int i = 0; i < NPOTS; ++i) potlock[i] = 1;
-}
+/* we have 8 voices that can play any sample when triggered
+  this structure holds the settings for each voice
+  each voice has 4 samples assigned to it for a total of 32
+  we use a header per sample set
+  we can have an arbitrary number of samples but you will run out of memory at some point
 
-// sample analog pot input and do filtering.
-// if pots are locked, change value only if movement is greater than MIN_POT_CHANGE
-uint16_t readpot(uint8_t potnum) {
-  int val = 0;
-  int input;
-  switch (potnum) { // map potnum to RP2040 pin
-    case 0:
-      input = AIN0;
-      break;
-    case 1:
-      input = AIN1;
-      break;
-    case 2:
-    default:   // shouldn't happen
-      input = AIN0;
-      break;
-  }
-  // note that Pikocore pots are wired "backwards" - max voltage is full ccw
-  for (int j = 0; j < POT_AVERAGING; ++j) val += (1024 - analogRead(input)); // read the A/D a few times and average for a more stable value
-  val = val / POT_AVERAGING;
-  if (potlock[potnum]) {
-    int delta = lastpotvalue[potnum] - val; // this needs to be done outside of the abs() function - see arduino abs() docs
-    if (abs(delta) > MIN_POT_CHANGE) {
-      potlock[potnum] = 0; // flag pot no longer locked
-      potvalue[potnum] = lastpotvalue[potnum] = val; // save the new reading
-    }
-    else val = lastpotvalue[potnum];
-  }
-  else {
-    if (abs(lastpotvalue[potnum] - val) > MIN_COUNTS) lastpotvalue[potnum] = val; // even if pot is unlocked, make sure pot has moved at least MIN_COUNT counts so values don't jump around
-    else val = lastpotvalue[potnum];
-    potvalue[potnum] = val; // pot is unlocked so save the reading
-  }
-  return val;
-}
+  sound sample files are 22khz 16 bit signed PCM format - see the sample include files for examples
+  you can change the sample rate to whatever you want but most testing was done at 22khz. 44khz probably works but not much testing was done
+  use the wave2header22khz.exe utility to automagically batch convert all the .wav files in a directory into the required header files
+  put your 22khz or 44khz PCM wav files in a sample subdirectory with a copy of the utility, run the utility and it will generate all the required header files
+  wave2header creates a header file containing the signed PCM values for each sample - note that it may change the name of the file if required to make it "c friendly"
+  wave2header also creates sampledefs.h which is an array of structures containing information about each sample file
+  the samples are arranged in alphabetical order to facilitate grouping samples by name - you can manually edit this file to change the order of the samples as needed
+  sampledefs.h contains other information not used by this program e.g. the name of the sample file - I wrote it for another project
+   wave2header also creates "samples.h" which #includes all the generated header files
+*/
 
 
+#include "80s.h"
 
-
-// we have 8 voices that can play any sample when triggered
-// this structure holds the settings for each voice
-// 80s only to 20, jungle to 29
-
-//we use a header per sample set
-
-//#include "80s.h"
+//#include "angularj.h"
+//#include "mixp.h"
 //#include "beatbox.h"
 //#include "bbox.h"
-//#include "angularj.h"
-#include "mixp.h"
-// pico 2 only
-//#include "mix.h" 
 
-// we can have an arbitrary number of samples but you will run out of memory at some point
-// sound sample files are 22khz 16 bit signed PCM format - see the sample include files for examples
-// you can change the sample rate to whatever you want but most testing was done at 22khz. 44khz probably works but not much testing was done
-// use the wave2header22khz.exe utility to automagically batch convert all the .wav files in a directory into the required header files
-// put your 22khz or 44khz PCM wav files in a sample subdirectory with a copy of the utility, run the utility and it will generate all the required header files
-// wave2header creates a header file containing the signed PCM values for each sample - note that it may change the name of the file if required to make it "c friendly"
-// wave2header also creates sampledefs.h which is an array of structures containing information about each sample file
-// the samples are arranged in alphabetical order to facilitate grouping samples by name - you can manually edit this file to change the order of the samples as needed
-// sampledefs.h contains other information not used by this program e.g. the name of the sample file - I wrote it for another project
-// wave2header also creates "samples.h" which #includes all the generated header files
-//#include "Jungle/samples.h"
-//#include "808samples/samples.h" // 808 sounds
-//#include "Angular_Jungle_Set/samples.h"   // Jungle soundfont set - great!
-//#include "Angular_Techno_Set/samples.h"   // Techno
-//#include "Acoustic3/samples.h"   // acoustic drums
-//#include "Pico_kit/samples.h"   // assorted samples
-//#include "testkit/samples.h"   // small kit for testing
-//#include "Trashrez/samples.h"
-//#include "world/samples.h"
-//#include "mt40sr88sy1/samples.h"
-//#include "kurzweill/samples.h"
-//#include "beatbox/samples.h"
-//#include "bbox/samples.h"
-
+// pico 2 only, these are 44khz since there is enough space on the pico2
+//#include "mix.h"
 
 #define NUM_SAMPLES (sizeof(sample)/sizeof(sample_t))
 
-// sample and debounce the keys
-
-
-// scan buttons
-bool scanbuttons(void)
-{
-  bool pressed;
-  for (int i = 0; i < NUM_BUTTONS; ++i) {
-    switch (i) { // sample gate inputs
-      case 0:
-        pressed = !digitalRead(BUTTON0); // active low key inputs
-        break;
-      case 1:
-        pressed = !digitalRead(BUTTON1);
-        break;
-      case 2:
-        pressed = !digitalRead(BUTTON2);
-        break;
-      case 3:
-        pressed = !digitalRead(BUTTON3);
-        break;
-      case 4:
-        pressed = !digitalRead(BUTTON4);
-        break;
-      case 5:
-        pressed = !digitalRead(BUTTON5);
-        break;
-      case 6:
-        pressed = !digitalRead(BUTTON6);
-        break;
-      case 7:
-        pressed = !digitalRead(BUTTON7);
-        break;
-      case 8:
-        pressed = !digitalRead(SHIFTBUTTON);
-        break;
-    }
-
-    if (pressed) {
-      if (debouncecnt[i] <= 3) ++debouncecnt[i];
-      if (debouncecnt[i] == 2) { // trigger on second sample of key active
-        button[i] = 1;
-      }
-    }
-    else {
-      debouncecnt[i] = 0;
-      button[i] = 0;
-    }
-  }
-  if (pressed) return true;
-  else return false;
-}
-
-
-/* no MIDI for now
-  // serial MIDI handler
-
-  void HandleNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
-  if (channel==MIDI_Channel) {
-      for (int i=0; i< NUM_SAMPLES;++i) {  //
-        if (sample[i].MIDINOTE == note) {
-          sample[i].play_volume=velocity;  // use MIDI volume
-          sample[i].sampleindex=0;  // if note matches sample MIDI note number, start it playing
-        }
-      }
-  }
-  }
-*/
 
 // include here to avoid forward references - I'm lazy :)
 
 #include "seq.h"
+#include "display.h"
+#include "eeprom.h"
 
-#define DISPLAY_TIME 2000 // time in ms to display numbers on LEDS
-int32_t display_timer;
-
-// show a number in binary on the LEDs
-void display_value(int16_t value) {
-  for (int i = 7; i >= 0; i--) { // NOPE + 1 can loop this way because port assignments are sequential
-    digitalWrite(led[i], value & 1);
-    value = value >> 1;
-  }
-  display_timer = millis();
-}
-
-// rotate trigger pattern
-uint16_t rightRotate(int shift, uint16_t value, uint8_t pattern_length) {
-  uint16_t mask = ((1 << pattern_length) - 1);
-  value &= mask;
-  return ((value >> shift) | (value << (pattern_length - shift))) & mask;
-}
+bool starting = false;
 
 // main core setup
 void setup() {
@@ -457,9 +276,12 @@ void setup() {
   //set_sys_clock_khz(264000, true); don't do this :)
 
   Serial.begin(115200);
-  Serial.print(F("\nStarting RPM_Measure on ")); Serial.println(BOARD_NAME);
-  Serial.println(RPI_PICO_TIMER_INTERRUPT_VERSION);
-  Serial.print(F("CPU Frequency = ")); Serial.print(F_CPU / 1000000); Serial.println(F(" MHz"));
+
+  if (debug) {
+    Serial.print(F("\nStarting RPM_Measure on ")); Serial.println(BOARD_NAME);
+    Serial.println(RPI_PICO_TIMER_INTERRUPT_VERSION);
+    Serial.print(F("CPU Frequency = ")); Serial.print(F_CPU / 1000000); Serial.println(F(" MHz"));
+  }
   // Interval in microsecs
   if (ITimer0.attachInterruptInterval(TIMER0_INTERVAL_MS * 1000, TimerHandler0))
   {
@@ -467,7 +289,7 @@ void setup() {
   }  else {
     Serial.println(F("Can't set ITimer0. Select another freq. or timer"));
   }
-  Serial.flush();
+  //Serial.flush();
 
   // Additions
   // ENCODER
@@ -529,31 +351,52 @@ void setup() {
   DAC.setBuffers(4, 128); // DMA buffers
   DAC.begin(SAMPLERATE);
 
-  /* no MIDI for now
-    //  Set up serial MIDI port
-    MIDISerial.begin(31250, SERIAL_8N1, MIDIRX,MIDITX ); // midi port
 
-    // set up serial MIDI library callbacks
-    MIDI.setHandleNoteOn(HandleNoteOn);  //
 
-    // Initiate serial MIDI communications, listen to all channels
-    MIDI.begin(MIDI_CHANNEL_OMNI);
+  // try to retrieve saved preset if not, init slots
+  EEPROM.begin(2048); // the 8 slots we save now are only 384 bytes, but it'll probably grow
+
+
+
+  /*
+    if (selected_preset <8 && selected_preset > -1) {
+      loadFromEEPROM(selected_preset);
+      updateRythm();
+
+    } else {
+      // initialize all eeprom slots
+      for (uint8_t i = 7; i > -1; i--) {
+        loadFromPreset(i); // load out of our base set in progmem
+        saveToEEPROM(i); // save the config data for this slot
+        saveCurrentPreset(i) ; // save the 'current' preset to eeprom
+      }
+    }
   */
-  // set up runningavg
-  ra.Init(5);
 
-  seq[0].trigger->generateRandomSequence(8, 16);
-  seq[2].trigger->generateRandomSequence(3, 16);
-  seq[5].trigger->generateRandomSequence(5, 16);
-  seq[7].trigger->generateRandomSequence(6, 16);
   display_value(NUM_SAMPLES); // show number of samples on the display
-
+  starting = true;
+  delay(1000);
 }
 
 
 
 // main core handles UI
+
 void loop() {
+
+  // we read the first byte to try to get a preset, stored 0-7
+  if (starting) {
+    selected_preset = EEPROM.read(0); // read first position, stored preset
+    if (debug) Serial.print("selected ");
+    if (debug) Serial.println(selected_preset);
+    if (selected_preset > 0 && selected_preset < 8) {
+      loadFromPreset(selected_preset);
+    } else {
+      loadFromPreset(0);
+    }
+    starting = false;
+  }
+
   bool anybuttonpressed;
   // timer
   uint32_t now = millis();
@@ -570,15 +413,20 @@ void loop() {
 
   // set play mode 0 play 1 edit patterns, 3 FX?
   if (encoder_push_millis > 0 ) {
-    if ((now - encoder_push_millis) > 25 && ! encoder_delta ) {
+
+    // first mode change on encoder button push, short
+    if ((now - encoder_push_millis) < 100 && ! encoder_delta ) {
       if ( !encoder_held ) {
         encoder_held = true;
         display_mode = display_mode + 1;
-        if ( display_mode > 2) { // switched back to play mode
+        if ( display_mode > 3) { // switched back to play mode
           display_mode = 0;
           //configure_sequencer();
         }
       }
+    } else if ( (now - encoder_push_millis) > 100 && ! encoder_delta && display_mode == 3 ) {
+      // or change  between load and save preset
+      loadSave = !loadSave ; // toggle between load and save
     }
 
     if (step_push_millis > 0) { // we're pushing a step key too
@@ -598,9 +446,7 @@ void loop() {
       // a track button is pressed
       current_track = i; // keypress selects track we are working on
 
-      //  if ((!potlock[1]) || (!potlock[2])) seq[i].trigger=euclid(16,map(potvalue[1],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS),map(potvalue[2],POT_MIN,POT_MAX,0,MAX_SEQ_STEPS-1));
-
-      // look up drum trigger pattern encoder play modes
+      // use encoder delta with selected button to set sample for track
       if ( (encoder_pos != encoder_pos_last ) && ! button[8] && display_mode == 0) {
         voice[i].isPlaying = false;
         // here we rotate at offset since we're now arranging sample sets in groups of 4
@@ -613,45 +459,61 @@ void loop() {
         }
         if (result >= 0 && result <= NUM_SAMPLES - 1) {
           voice[current_track].sample = result;
+          currentConfig.sample[i] = result; // save config 0 - 31
         }
       }
 
+      // user encoder button with selected button to set the offset
       if ( (encoder_pos != encoder_pos_last ) && display_mode == 1 ) {
-        
         int repeats = seq[current_track].repeats;
         repeats = constrain( (repeats + encoder_delta), 0, 5);
         seq[i].repeats = repeats;
-        
+
         // repeats are actually now OFFSET. the repeats mechanism with rotate
         // was disturbing
-        
+
         display_repeats = repeats;
         seq[i].trigger->rotate(repeats);
         display_pat = (String) seq[i].trigger->textSequence;
-        
+
         // if offset is 0, reset
         if (repeats == 0) {
           seq[i].trigger->generateSequence(seq[i].fills, 16);
         }
+      }
+      // either restrieve or save preset
+      if ( display_mode == 3 &&  ! button[8] ) {
+        if (loadSave == 0 && ! loading) {
+          loading = true;
+          selected_preset = current_track;
+          saveToEEPROM(current_track);
 
+        } else if (loadSave == 1 && ! loading) {
+          loading = true;
+          selected_preset = current_track;
+          loadFromEEPROM(current_track);
+
+        }
       }
 
       // change pitch on pot 0
       if (!potlock[0] && ( display_mode == 0 || display_mode == 2) ) { // change sample if pot has moved enough
-        uint16_t pitch = (uint16_t)(map(potvalue[0], POT_MIN, POT_MAX, 2048, 8192));
+        uint16_t pitch = (uint16_t)(map(potvalue[0], POT_MIN, POT_MAX, 2048, 8160));
         // divisible by 2 and it won't click
         if (pitch % 2 == 0) {
           voice[current_track].sampleincrement = pitch;  // change sample pitch if pot has moved enough
-          display_pitch = map(pitch, 2048, 8192, 0, 100);
+          display_pitch = constrain( (pitch >> 5), 1, 255) ; // show 8 bits, which we also store
+          currentConfig.pitch[i] = display_pitch; // update config for this channel
         }
       }
-      
+
       // change sample volume level if pot has moved enough
       if (!potlock[1] && display_mode == 0) {
-        int16_t level = (int16_t)(map(potvalue[1], POT_MIN, POT_MAX, 0, 1000));
+        int16_t level = (int16_t)(map(potvalue[1], POT_MIN, POT_MAX, 0, 1023));
         voice[current_track].level = level;
-        display_vol = level / 10;
-        
+        display_vol = constrain( ( level >> 2 ), 1, 255); // show 8 bits which we store
+        currentConfig.volume[i] = display_vol;
+
       }
       if (!potlock[0] && display_mode == 1 ) {
         // set track euclidean triggers, random, if either pot has moved enough
@@ -685,10 +547,13 @@ void loop() {
   }
 
   // now, after buttons check if only encoder moved and no buttons
-  if (! anybuttonpressed && encoder_delta ) {
+  if (! anybuttonpressed && encoder_delta && display_mode != 3) {
     bpm = bpm + encoder_delta;
     displayUpdate();
     display_value(bpm - 50);
+  } else if (! anybuttonpressed && encoder_delta && display_mode == 3) {
+    // in load save mode, switch between load and save
+    loadSave = !loadSave ;
   }
 
   /// only set new pos last after buttons have had a chance to use the delta
@@ -707,8 +572,6 @@ void loop() {
   // this is so when we change tracks we don't immediately change the settings on the new track
   if (!anybuttonpressed) lockpots();
 
-  // MIDI.read();  // do serial MIDI
-
   scanbuttons();
 
   // reading A/D seems to cause noise in the audio so don't do it too often
@@ -720,13 +583,69 @@ void loop() {
 
   // if display is not busy show track triggers on leds
   if ((now - display_timer) > DISPLAY_TIME) {
-    displayUpdate();
+
+    if (display_mode == 3 ) {
+      displayLoadSaveUpdate();
+    } else {
+      displayUpdate();
+    }
+
     for (int i = 0; i <= 7; ++i) { // LED port numbers are sequential on the Pikocore
       if ( seq[i].trigger->getCurrentStep() ) digitalWrite(led[i], 1);
       else digitalWrite(led[i], 0);
     }
+
   }
 }
+
+/* display mode
+   else if (mode == 1) {
+
+    // display load save;
+
+    // lock pots
+    lockPots();
+
+    // keep drum loop running
+    drummerLoop();
+
+    // encoder moved
+    if (delta != 0) {
+      int old_preset = selected_preset; // store it just in case we need it
+      int preset = constrain( (display_preset + delta), 0, 19);
+
+      // load methods takes care of setting mode back to 0 for drums
+      // they also update the selected_preset & selected_slot vars
+      display_preset = preset;
+      loadDisplayUpdate();
+
+    }
+    //  button pushed and we have a new preset
+    if ( save_now && display_preset != selected_preset) {
+
+      if (display_preset < 10 ) {
+        selected_preset = display_preset;
+        loadFromPreset(selected_preset);
+      } else {
+        selected_slot = display_preset - 10; // we're using a simple offset to keep the screen simple
+        selected_preset = display_preset;
+        loadFromEEPROM(selected_slot);
+      }
+      tempo = currentConfig.tempo;
+      kit = currentConfig.kit;
+      saveCurrentPreset(selected_preset);
+      save_now = false;
+      mode = 0;
+      if (debug) Serial.println(currentConfig.kit);
+      if (debug) Serial.println(currentConfig.tempo);
+      if (tempo != currentConfig.tempo) tempo = currentConfig.tempo;
+      if (kit != currentConfig.kit) kit = currentConfig.kit;
+    }
+
+
+  }
+*/
+
 
 // second core setup
 // second core dedicated to sample processing
@@ -794,110 +713,4 @@ void loop1() {
 #endif
 
 
-}
-
-
-// ADD
-//
-
-//// {x,y} locations of play screen items
-const int step_text_pos[] = { 0, 15, 16, 15, 32, 15, 48, 15, 64, 15, 80, 15, 96, 15, 112, 15 };
-const pos_t bpm_text_pos    = {.x = 0,  .y = 15, .str = "bpm:%3d" };
-const pos_t trans_text_pos  = {.x = 65, .y = 15, .str = "trs:%+2d" };
-const pos_t seqno_text_pos  = {.x = 65, .y = 30, .str = "seq:%d" };
-const pos_t seq_info_pos    = {.x = 0, .y = 30, .str = "" };
-const pos_t play_text_pos   = {.x = 0, .y = 45, .str = "" };
-const pos_t pat_text_pos    = {.x = 0, .y = 60,  .str = "" };
-
-const pos_t gate_bar_offset = { .x = 0, .y = -15, .str = "" };
-const pos_t edit_text_offset = { .x = 3, .y = 22,  .str = "" };
-const int gate_bar_width = 14;
-const int gate_bar_height = 4;
-
-void displayUpdate() {
-  display.clearDisplay();
-  //display.setFont(&myfont); //don't need to call this every time!
-  display.cp437(true);
-  //display.setTextColor(WHITE, 0);
-  /*
-    for (int i = 0; i < 8; i++) {
-    Step s = seqr.steps[i];
-    const char* nstr = notenum_to_notestr(s.note);
-    int o = notenum_to_oct(s.note);
-    int x = step_text_pos[i * 2], y = step_text_pos[i * 2 + 1];
-    display.setCursor(x, y);
-    display.print(nstr);
-    display.setCursor(x + oct_text_offset.x, y + oct_text_offset.y);
-    display.printf("%1d", o);
-    display.setCursor(x + edit_text_offset.x, y + edit_text_offset.y);
-    display.print((i == selected_step) ? '^' : (s.on) ? ' '
-                                                      : '*');
-    int gate_w = 1 + (s.gate * gate_bar_width / 16);
-    display.fillRect(x + gate_bar_offset.x, y + gate_bar_offset.y, gate_w, gate_bar_height, WHITE);
-    }
-  */
-
-  // display.setFont(&myfont2);
-  /*
-    Serial.print("eb1 incremented by: ");
-    Serial.println(eb.increment());
-    Serial.print("eb1 position is: ");
-    Serial.println(eb.position());
-    Serial.print("eb1 clickCount: ");
-    Serial.println(eb.clickCount());
-  */
-
-  /*
-       const pos_t bpm_text_pos    = {.x=0,  .y=57, .str="bpm:%3d" };
-    const pos_t trans_text_pos  = {.x=55, .y=57, .str="trs:%+2d" };
-    const pos_t seqno_text_pos  = {.x=0,  .y=45, .str="seq:%d" };
-    const pos_t seq_info_pos    = {.x=60, .y=45, .str="" };
-    const pos_t play_text_pos   = {.x=110,.y=57, .str="" };
-  */
-  // bpm
-  display.setCursor(bpm_text_pos.x, bpm_text_pos.y);
-  display.print("BPM: ");
-  display.print(bpm);
-
-  // transpose
-  display.setCursor(trans_text_pos.x, trans_text_pos.y);
-  display.print("VOL: ");
-  display.print(display_vol);
-
-  // seq info / meta
-  display.setCursor(seq_info_pos.x, seq_info_pos.y);
-  display.print("OFSET: ");
-  display.print(display_repeats);
-
-  // seqno
-  display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
-  display.print("PITCH: ");
-  display.print(display_pitch);  // user sees 1-8
-
-  // seq info / meta
-  display.setCursor(play_text_pos.x, play_text_pos.y);
-  display.print("MODE: ");
-  display.print(display_mode);
-
-  // although cool, can't read 01 in org font
-  //display.setFont(&bigfont); //don't need to call this every time!
-  display.setCursor(pat_text_pos.x, pat_text_pos.y);
-  display.print("PAT: ");
-  display.print((String)display_pat);
-
-  // play/pause
-  //display.setCursor(play_text_pos.x, play_text_pos.y);
-  //display.print(seqr.playing ? " >" : "[]");
-
-  display.display();
-}
-
-void displaySplash() {
-  display.clearDisplay();
-  display.setFont(&myfont);
-  display.setTextColor(WHITE, 0);
-  display.drawRect(0, 0, dw - 1, dh - 1, WHITE);
-  display.setCursor(25, 32);
-  display.print("PikoBeatBox");
-  display.display();
 }

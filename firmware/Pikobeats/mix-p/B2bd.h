@@ -1,6 +1,6 @@
 // Audio data converted from WAV file by wav2header based on wav2sketch by Paul Stoffregen
 
-// Converted from b2-BD.WAV.wav.WAV, using 22000 Hz, PCM encoding
+// Converted from b2-BD.WAV.wav, using 22000 Hz, PCM encoding
 #define B2bd_SIZE 5500
 
 const int16_t B2bd[] = {

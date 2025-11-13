@@ -11,7 +11,7 @@
 #define NOTE_DURATION (PPQN/12) // sixteenth note duration
 #define CLOCKPULSE 15 // was 15duration of clock out pulse
 
-int16_t bpm = TEMPO;
+int16_t bpm = TEMPO; 
 int32_t lastMIDIclock; // timestamp of last MIDI clock
 int16_t MIDIclocks = PPQN ;//* 2; // midi clock counter
 int16_t MIDIsync = 16;  // number of clocks required to sync BPM
@@ -36,9 +36,9 @@ struct sequencer {
 
 
 sequencer seq[NTRACKS] = {
-  new euclid(), 4, 2, 0, DEFAULT_SEQ_STEPS - 1, // step index
-  new euclid(), 3, 1, 0, DEFAULT_SEQ_STEPS - 1, // step index
-  new euclid(), 2, 3, 0, DEFAULT_SEQ_STEPS - 1, // step index
+  new euclid(), 4, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index
+  new euclid(), 3, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index
+  new euclid(), 2, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index
   new euclid(), 0, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index
   new euclid(), 0, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index
   new euclid(), 0, 0, 0, DEFAULT_SEQ_STEPS - 1, // step index
@@ -53,6 +53,7 @@ void clocktick (long clockperiod) {
 
   for (uint8_t track = 0; track < NTRACKS; ++track) { // note that triggers are stored MSB first
     if ( seq[track].trigger->getCurrentStep() ) {
+      //voice[track].level = voice[track].level - random(150); // a little movement to the volume
       voice[track].sampleindex = 0; // trigger sample for this track
       voice[track].isPlaying = true;
     } else {

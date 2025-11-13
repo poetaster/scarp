@@ -16,54 +16,54 @@ struct sample_t {
 	127,	// play volume 0-127
 	"A1bd",	// sample name
 
-	A1ch,	// pointer to sample array
-	A1ch_SIZE,	// size of the sample array
-	A1ch_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	A1bsn,	// pointer to sample array
+	A1bsn_SIZE,	// size of the sample array
+	A1bsn_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	36,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"A1ch",	// sample name
+	"A1bsn",	// sample name
 
-	A1cl,	// pointer to sample array
-	A1cl_SIZE,	// size of the sample array
-	A1cl_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	A1csn,	// pointer to sample array
+	A1csn_SIZE,	// size of the sample array
+	A1csn_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	37,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"A1cl",	// sample name
+	"A1csn",	// sample name
 
-	A1cr,	// pointer to sample array
-	A1cr_SIZE,	// size of the sample array
-	A1cr_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	A1cym,	// pointer to sample array
+	A1cym_SIZE,	// size of the sample array
+	A1cym_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	38,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"A1cr",	// sample name
+	"A1cym",	// sample name
 
-	A1oh,	// pointer to sample array
-	A1oh_SIZE,	// size of the sample array
-	A1oh_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	A1hat,	// pointer to sample array
+	A1hat_SIZE,	// size of the sample array
+	A1hat_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	39,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"A1oh",	// sample name
+	"A1hat",	// sample name
 
-	A1rd,	// pointer to sample array
-	A1rd_SIZE,	// size of the sample array
-	A1rd_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	A1perc,	// pointer to sample array
+	A1perc_SIZE,	// size of the sample array
+	A1perc_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	40,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"A1rd",	// sample name
+	"A1perc",	// sample name
 
-	A1rs,	// pointer to sample array
-	A1rs_SIZE,	// size of the sample array
-	A1rs_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	A1tom,	// pointer to sample array
+	A1tom_SIZE,	// size of the sample array
+	A1tom_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	41,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"A1rs",	// sample name
+	"A1tom",	// sample name
 
-	A1sd,	// pointer to sample array
-	A1sd_SIZE,	// size of the sample array
-	A1sd_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	A1znd,	// pointer to sample array
+	A1znd_SIZE,	// size of the sample array
+	A1znd_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	42,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"A1sd",	// sample name
+	"A1znd",	// sample name
 
 	B2bd,	// pointer to sample array
 	B2bd_SIZE,	// size of the sample array
@@ -72,54 +72,54 @@ struct sample_t {
 	127,	// play volume 0-127
 	"B2bd",	// sample name
 
-	B2ch,	// pointer to sample array
-	B2ch_SIZE,	// size of the sample array
-	B2ch_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	B2bsn,	// pointer to sample array
+	B2bsn_SIZE,	// size of the sample array
+	B2bsn_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	44,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"B2ch",	// sample name
+	"B2bsn",	// sample name
 
-	B2cl,	// pointer to sample array
-	B2cl_SIZE,	// size of the sample array
-	B2cl_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	B2csn,	// pointer to sample array
+	B2csn_SIZE,	// size of the sample array
+	B2csn_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	45,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"B2cl",	// sample name
+	"B2csn",	// sample name
 
-	B2cr,	// pointer to sample array
-	B2cr_SIZE,	// size of the sample array
-	B2cr_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	B2cym,	// pointer to sample array
+	B2cym_SIZE,	// size of the sample array
+	B2cym_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	46,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"B2cr",	// sample name
+	"B2cym",	// sample name
 
-	B2oh,	// pointer to sample array
-	B2oh_SIZE,	// size of the sample array
-	B2oh_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	B2hat,	// pointer to sample array
+	B2hat_SIZE,	// size of the sample array
+	B2hat_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	47,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"B2oh",	// sample name
+	"B2hat",	// sample name
 
-	B2rd,	// pointer to sample array
-	B2rd_SIZE,	// size of the sample array
-	B2rd_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	B2perc,	// pointer to sample array
+	B2perc_SIZE,	// size of the sample array
+	B2perc_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	48,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"B2rd",	// sample name
+	"B2perc",	// sample name
 
-	B2rs,	// pointer to sample array
-	B2rs_SIZE,	// size of the sample array
-	B2rs_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	B2tom,	// pointer to sample array
+	B2tom_SIZE,	// size of the sample array
+	B2tom_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	49,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"B2rs",	// sample name
+	"B2tom",	// sample name
 
-	B2sd,	// pointer to sample array
-	B2sd_SIZE,	// size of the sample array
-	B2sd_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	B2znd,	// pointer to sample array
+	B2znd_SIZE,	// size of the sample array
+	B2znd_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	50,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"B2sd",	// sample name
+	"B2znd",	// sample name
 
 	C3bd,	// pointer to sample array
 	C3bd_SIZE,	// size of the sample array
@@ -128,54 +128,54 @@ struct sample_t {
 	127,	// play volume 0-127
 	"C3bd",	// sample name
 
-	C3ch,	// pointer to sample array
-	C3ch_SIZE,	// size of the sample array
-	C3ch_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	C3bsn,	// pointer to sample array
+	C3bsn_SIZE,	// size of the sample array
+	C3bsn_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	52,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"C3ch",	// sample name
+	"C3bsn",	// sample name
 
-	C3cl,	// pointer to sample array
-	C3cl_SIZE,	// size of the sample array
-	C3cl_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	C3csn,	// pointer to sample array
+	C3csn_SIZE,	// size of the sample array
+	C3csn_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	53,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"C3cl",	// sample name
+	"C3csn",	// sample name
 
-	C3cr,	// pointer to sample array
-	C3cr_SIZE,	// size of the sample array
-	C3cr_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	C3cym,	// pointer to sample array
+	C3cym_SIZE,	// size of the sample array
+	C3cym_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	54,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"C3cr",	// sample name
+	"C3cym",	// sample name
 
-	C3oh,	// pointer to sample array
-	C3oh_SIZE,	// size of the sample array
-	C3oh_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	C3hat,	// pointer to sample array
+	C3hat_SIZE,	// size of the sample array
+	C3hat_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	55,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"C3oh",	// sample name
+	"C3hat",	// sample name
 
-	C3rd,	// pointer to sample array
-	C3rd_SIZE,	// size of the sample array
-	C3rd_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	C3perc,	// pointer to sample array
+	C3perc_SIZE,	// size of the sample array
+	C3perc_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	56,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"C3rd",	// sample name
+	"C3perc",	// sample name
 
-	C3rs,	// pointer to sample array
-	C3rs_SIZE,	// size of the sample array
-	C3rs_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	C3tom,	// pointer to sample array
+	C3tom_SIZE,	// size of the sample array
+	C3tom_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	57,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"C3rs",	// sample name
+	"C3tom",	// sample name
 
-	C3sd,	// pointer to sample array
-	C3sd_SIZE,	// size of the sample array
-	C3sd_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	C3znd,	// pointer to sample array
+	C3znd_SIZE,	// size of the sample array
+	C3znd_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	58,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"C3sd",	// sample name
+	"C3znd",	// sample name
 
 	D4bd,	// pointer to sample array
 	D4bd_SIZE,	// size of the sample array
@@ -184,53 +184,53 @@ struct sample_t {
 	127,	// play volume 0-127
 	"D4bd",	// sample name
 
-	D4ch,	// pointer to sample array
-	D4ch_SIZE,	// size of the sample array
-	D4ch_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	D4bsn,	// pointer to sample array
+	D4bsn_SIZE,	// size of the sample array
+	D4bsn_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	60,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"D4ch",	// sample name
+	"D4bsn",	// sample name
 
-	D4cl,	// pointer to sample array
-	D4cl_SIZE,	// size of the sample array
-	D4cl_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	D4csn,	// pointer to sample array
+	D4csn_SIZE,	// size of the sample array
+	D4csn_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	61,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"D4cl",	// sample name
+	"D4csn",	// sample name
 
-	D4cr,	// pointer to sample array
-	D4cr_SIZE,	// size of the sample array
-	D4cr_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	D4cym,	// pointer to sample array
+	D4cym_SIZE,	// size of the sample array
+	D4cym_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	62,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"D4cr",	// sample name
+	"D4cym",	// sample name
 
-	D4oh,	// pointer to sample array
-	D4oh_SIZE,	// size of the sample array
-	D4oh_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	D4hat,	// pointer to sample array
+	D4hat_SIZE,	// size of the sample array
+	D4hat_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	63,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"D4oh",	// sample name
+	"D4hat",	// sample name
 
-	D4rd,	// pointer to sample array
-	D4rd_SIZE,	// size of the sample array
-	D4rd_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	D4perc,	// pointer to sample array
+	D4perc_SIZE,	// size of the sample array
+	D4perc_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	64,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"D4rd",	// sample name
+	"D4perc",	// sample name
 
-	D4rs,	// pointer to sample array
-	D4rs_SIZE,	// size of the sample array
-	D4rs_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	D4tom,	// pointer to sample array
+	D4tom_SIZE,	// size of the sample array
+	D4tom_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	65,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"D4rs",	// sample name
+	"D4tom",	// sample name
 
-	D4sd,	// pointer to sample array
-	D4sd_SIZE,	// size of the sample array
-	D4sd_SIZE,	//sampleindex. if at end of sample array sound is not playing
+	D4znd,	// pointer to sample array
+	D4znd_SIZE,	// size of the sample array
+	D4znd_SIZE,	//sampleindex. if at end of sample array sound is not playing
 	66,	// MIDI note on that plays this sample
 	127,	// play volume 0-127
-	"D4sd",	// sample name
+	"D4znd",	// sample name
 
 };

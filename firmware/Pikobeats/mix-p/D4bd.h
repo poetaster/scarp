@@ -1,6 +1,6 @@
 // Audio data converted from WAV file by wav2header based on wav2sketch by Paul Stoffregen
 
-// Converted from d4-BD.WAV.wav.WAV, using 22000 Hz, PCM encoding
+// Converted from d4-BD.WAV.wav, using 22000 Hz, PCM encoding
 #define D4bd_SIZE 23706
 
 const int16_t D4bd[] = {

@@ -1,6 +1,6 @@
 // Audio data converted from WAV file by wav2header based on wav2sketch by Paul Stoffregen
 
-// Converted from c3-BD.WAV.wav.WAV, using 22000 Hz, PCM encoding
+// Converted from c3-BD.WAV.wav, using 22000 Hz, PCM encoding
 #define C3bd_SIZE 23578
 
 const int16_t C3bd[] = {
