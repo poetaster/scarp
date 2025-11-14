@@ -56,6 +56,7 @@
 //#include "filter.h"
 
 bool debug = true;
+bool device_initialized = false;
 
 // display setup works with adafruit SSD1306 or SH1106G
 const int dw = 128;
@@ -387,8 +388,11 @@ void loop() {
 
   // we read the first byte to try to get a preset, stored 0-7
   if (starting) {
+    
     //selected_preset = EEPROM.read(0); // read first position, stored preset
+    
     loadLastPreset(); // sets selected_preset from base eeprom save point
+    
     if (selected_preset > -1 && selected_preset < 8) {
       loadFromEEPROM(selected_preset);
     } else {
@@ -445,7 +449,9 @@ void loop() {
 
       // a track button is pressed
       current_track = i; // keypress selects track we are working on
-
+      if (display_mode != 3 ) {
+        display_pat = (String) seq[i].trigger->textSequence;
+      }
       // use encoder delta with selected button to set sample for track
       if ( (encoder_pos != encoder_pos_last ) && ! button[8] && display_mode == 0) {
         voice[i].isPlaying = false;
@@ -488,13 +494,14 @@ void loop() {
           selected_preset = current_track;
           saveCurrentPreset(selected_preset); // save it
           saveToEEPROM(current_track);
+          loading = false;
 
         } else if (loadSave == 1 && ! loading) {
           loading = true; // make sure audio is off
           selected_preset = current_track; // set selected preset
-          saveCurrentPreset(selected_preset); // save it
           loadFromEEPROM(current_track); // load it
-
+          saveCurrentPreset(selected_preset); // save it
+          loading = false;
         }
       }
 
@@ -522,6 +529,7 @@ void loop() {
         //filter_fc = potvalue[0] * (LPF_MAX + 10) / 4096;
         seq[i].fills = map(potvalue[0], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
+        currentConfig.randy[i] = 1;
         display_pat = (String) seq[i].trigger->textSequence;
       }
 
