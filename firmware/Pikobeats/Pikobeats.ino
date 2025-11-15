@@ -55,7 +55,7 @@
 
 //#include "filter.h"
 
-bool debug = true;
+bool debug = false;
 uint8_t device_initialized = 0;
 
 // display setup works with adafruit SSD1306 or SH1106G
@@ -463,12 +463,6 @@ void loop() {
       // a track button is pressed
       current_track = i; // keypress selects track we are working on
 
-      // update display values on
-      display_pat = String(seq[i].trigger->textSequence);
-      display_pitch = currentConfig.pitch[i] ;
-      display_vol = currentConfig.volume[i] ;
-      display_repeats = seq[i].repeats;
-
       // use encoder delta with selected button to set sample for track
       if ( (encoder_pos != encoder_pos_last ) && ! button[8] && display_mode == 0) {
         voice[i].isPlaying = false;
@@ -486,7 +480,7 @@ void loop() {
         }
       }
 
-      // user encoder button with selected button to set the offset
+      // use encoder button with selected button to set the offset
       if ( (encoder_pos != encoder_pos_last ) && display_mode == 1 ) {
         int repeats = seq[current_track].repeats;
         repeats = constrain( (repeats + encoder_delta), 0, 5);
@@ -497,11 +491,12 @@ void loop() {
 
         display_repeats = repeats;
         seq[i].trigger->rotate(repeats);
-        display_pat = String(seq[i].trigger->textSequence);
 
         // if offset is 0, reset
-        if (repeats == 0) {
+        if (repeats == 0 && currentConfig.randy[i] == 0) {
           seq[i].trigger->generateSequence(seq[i].fills, 16);
+        } else if (repeats == 0 && currentConfig.randy[i] == 1) {
+          seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
         }
       }
       // either restrieve or save preset
@@ -555,7 +550,6 @@ void loop() {
         seq[i].fills = map(potvalue[0], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
         currentConfig.randy[i] = 1;
-        display_pat = String(seq[i].trigger->textSequence);
       }
 
       // set track euclidean triggers if either pot has moved enough
@@ -563,7 +557,6 @@ void loop() {
         seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateSequence(seq[i].fills, 16);
         seq[i].trigger->resetSequence(); // set to 0
-        display_pat = String(seq[i].trigger->textSequence);
 
       }
       //trig/retrig play
@@ -578,8 +571,14 @@ void loop() {
         }
       */
 
+      // update display values on
+      display_pat = String(seq[i].trigger->textSequence);
+      display_pitch = currentConfig.pitch[i] ;
+      display_vol = currentConfig.volume[i] ;
+      display_repeats = seq[i].repeats;
     }
   }
+
 
   // now, after buttons check if only encoder moved and no buttons
   if (! anybuttonpressed && encoder_delta && display_mode != 3) {

@@ -55,9 +55,9 @@ void updateRythm() {
 
     seq[i].fills = hits;
     seq[i].repeats = offset;
-    if (randy == 0 && hits > 0) {
+    if (randy == 0 ) {
       seq[i].trigger->generateSequence(hits, 16); // yeah, why is this fixed to 16?
-    } else if (randy == 1 && hits > 0) {
+    } else if (randy == 1) {
       if (debug) Serial.println("random pattern");
       seq[i].trigger->generateRandomSequence(hits, 16);
     }
