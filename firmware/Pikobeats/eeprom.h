@@ -254,7 +254,17 @@ void loadFromEEPROM(int slot) {
 
   } else {
     // Handle the error
-    if (debug ) Serial.println("EEPROM Save Error");
+    if (debug ) Serial.println("EEPROM Load Error");
+    return;
+  }
+}
+void loadAllFromEEPROM(){
+    int baseAddress = EEPROM_START_ADDRESS + (sizeof(defaultSlots));
+  if (baseAddress + CONFIG_SIZE <= EEPROM.length()) {
+    EEPROM.get(baseAddress, memorySlots);
+  } else {
+    // Handle the error
+    if (debug ) Serial.println("EEPROM Load Error");
     return;
   }
 }

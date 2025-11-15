@@ -383,9 +383,11 @@ void loop() {
     if (device_initialized == 7 ) {
 
       loadLastPreset(); // sets selected_preset from base eeprom save point
+      
       if (debug) Serial.println(selected_preset);
       if (selected_preset > -1 && selected_preset < 8) {
-        loadFromEEPROM(selected_preset);
+        loadMemorySlots();
+        loadFromMemorySlot(selected_preset);
         if (debug) Serial.println("retrieved from eeprom");
       } else {
         loadFromPreset(0);
@@ -505,21 +507,16 @@ void loop() {
           loading = true;
           selected_preset = current_track;
           DAC.end();
-          delay(100);
           saveToEEPROM(current_track);
-          delay(100);
           DAC.begin();
           loading = false;
 
         } else if (loadSave == 1 && ! loading && selected_preset != current_track) {
           loading = true; // make sure audio is off
           selected_preset = current_track; // set selected preset
+          loadFromMemorySlot(current_track); // load it from memory
           DAC.end();
-          delay(100);
-          loadFromEEPROM(current_track); // load it
-          delay(100);
           saveCurrentPreset(selected_preset); // save it
-          delay(100);
           DAC.begin();
           loading = false;
         }
