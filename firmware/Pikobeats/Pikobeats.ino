@@ -506,18 +506,18 @@ void loop() {
         if (loadSave == 0 && ! loading ) {
           loading = true;
           selected_preset = current_track;
-          DAC.end();
+          //DAC.end();
           saveToEEPROM(current_track);
-          DAC.begin();
+          //DAC.begin();
           loading = false;
 
         } else if (loadSave == 1 && ! loading && selected_preset != current_track) {
           loading = true; // make sure audio is off
           selected_preset = current_track; // set selected preset
           loadFromMemorySlot(current_track); // load it from memory
-          DAC.end();
+          //DAC.end();
           saveCurrentPreset(selected_preset); // save it
-          DAC.begin();
+          //DAC.begin();
           loading = false;
         }
       }
