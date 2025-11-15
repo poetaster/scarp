@@ -34,10 +34,10 @@ const char* notenum_to_notestr(int notenum) {
 const int step_text_pos[] = { 0, 15, 16, 15, 32, 15, 48, 15, 64, 15, 80, 15, 96, 15, 112, 15 };
 const pos_t bpm_text_pos    = {.x = 0,  .y = 15, .str = "bpm:%3d" };
 const pos_t trans_text_pos  = {.x = 65, .y = 15, .str = "trs:%+2d" };
-const pos_t seqno_text_pos  = {.x = 65, .y = 30, .str = "seq:%d" };
-const pos_t seq_info_pos    = {.x = 0, .y = 30, .str = "" };
+const pos_t seqno_text_pos  = {.x = 65, .y = 28, .str = "seq:%d" };
+const pos_t seq_info_pos    = {.x = 0, .y = 28, .str = "" };
 
-const pos_t play_text_pos   = {.x = 0, .y = 45, .str = "" };
+const pos_t play_text_pos   = {.x = 0, .y = 43, .str = "" };
 
 const pos_t pat_text_pos    = {.x = 0, .y = 55,  .str = "" };
 const pos_t pit_text_pos    = {.x = 65, .y = 55,  .str = "" };
@@ -47,37 +47,6 @@ const pos_t edit_text_offset = { .x = 3, .y = 22,  .str = "" };
 const int gate_bar_width = 14;
 const int gate_bar_height = 4;
 
-void displayStart() {
-  display.clearDisplay();
-
-  display.cp437(true);
-
-  // bpm
-  display.setCursor(bpm_text_pos.x, bpm_text_pos.y);
-  display.print("Detected BPM: ");
-  display.print(bpm);
-    // display load
-
-  // seq info / meta
-  display.setCursor(seq_info_pos.x, seq_info_pos.y);
-  display.print("FILLS: ");
-  display.print((String)currentConfig.fills[0]);
-
-  // seqno
-  display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
-  display.print("PITCH: ");
-  display.print((String)currentConfig.sample[0]);  // user sees 1-8
-
-  // seq info / meta
-  display.setCursor(play_text_pos.x, play_text_pos.y);
-  display.print("MODE: ");
-  display.print(display_mode);
-    
-  display.setCursor(pat_text_pos.x, pat_text_pos.y);
-  display.print("Loading: ");
-  display.print(selected_preset);
-  display.display();
-}
 
 void displayLoadSaveUpdate() {
   display.clearDisplay();
@@ -90,19 +59,19 @@ void displayLoadSaveUpdate() {
   display.print(bpm);
 
   // transpose
-  display.setCursor(trans_text_pos.x, trans_text_pos.y);
-  display.print("VOL: ");
-  display.print(display_vol);
+ // display.setCursor(trans_text_pos.x, trans_text_pos.y);
+ // display.print("VOL: ");
+ // display.print(display_vol);
 
   // seq info / meta
-  display.setCursor(seq_info_pos.x, seq_info_pos.y);
-  display.print("OFSET: ");
-  display.print(display_repeats);
+  //display.setCursor(seq_info_pos.x, seq_info_pos.y);
+  //display.print("OFSET: ");
+  //display.print(display_repeats);
 
   // seqno
-  display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
-  display.print("PITCH: ");
-  display.print(display_pitch);  // user sees 1-8
+  //display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
+  //display.print("PITCH: ");
+  //display.print(display_pitch);  // user sees 1-8
 
   // seq info / meta
   display.setCursor(play_text_pos.x, play_text_pos.y);
@@ -111,17 +80,18 @@ void displayLoadSaveUpdate() {
   // preset
   display.setCursor(65, play_text_pos.y);
   display.print("Pre: ");
-  display.print(selected_preset);
+  display.print(selected_preset+1);
 
   // display load
   display.setCursor(pat_text_pos.x, pat_text_pos.y);
   display.print("Load: ");
-  display.print(selected_preset);
+  display.print(selected_preset+1);
 
   // display save
   display.setCursor(pit_text_pos.x, pat_text_pos.y);
   display.print("Save: ");
-  display.print(selected_preset);
+  display.print(selected_preset+1);
+  
   // in save mode, default underline
   if (loadSave == 0) {
     display.setCursor(65, 60);
@@ -130,15 +100,6 @@ void displayLoadSaveUpdate() {
     display.setCursor(0, 60);
     display.print("_____");
   }
-
-  /*
-    display.setCursor(pat_text_pos.x, pat_text_pos.y);
-    display.print("PAT: ");
-    display.print((String)display_pat);
-  */
-  // play/pause
-  //display.setCursor(play_text_pos.x, play_text_pos.y);
-  //display.print(seqr.playing ? " >" : "[]");
 
   display.display();
 }
@@ -208,6 +169,12 @@ void displayUpdate() {
   display.setCursor(play_text_pos.x, play_text_pos.y);
   display.print("MODE: ");
   display.print(display_mode);
+
+  // display preset #
+  display.setCursor(pit_text_pos.x, play_text_pos.y);
+  display.print("Preset: ");
+  display.print(selected_preset+1);
+  
 
   display.setCursor(pat_text_pos.x, pat_text_pos.y);
   display.print("PAT: ");

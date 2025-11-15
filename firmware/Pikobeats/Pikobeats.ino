@@ -383,7 +383,7 @@ void loop() {
     if (device_initialized == 7 ) {
 
       loadLastPreset(); // sets selected_preset from base eeprom save point
-      
+
       if (debug) Serial.println(selected_preset);
       if (selected_preset > -1 && selected_preset < 8) {
         loadMemorySlots();
@@ -439,9 +439,10 @@ void loop() {
         encoder_held = true;
         display_mode = display_mode + 1;
         if ( display_mode > 3) { // switched back to play mode
-          display_mode = 0; 
+          display_mode = 0;
           // we're movingout of load save, so save current selected preset
           saveCurrentPreset(selected_preset);
+          
           //configure_sequencer();
         }
       }
@@ -481,6 +482,7 @@ void loop() {
         if (result >= 0 && result <= NUM_SAMPLES - 1) {
           voice[current_track].sample = result;
           currentConfig.sample[i] = result; // save config 0 - 31
+          updateMemorySlot(current_track); // update the memory slot before switching
         }
       }
 
@@ -502,11 +504,13 @@ void loop() {
         } else if (repeats == 0 && currentConfig.randy[i] == 1) {
           seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
         }
+        updateMemorySlot(current_track); // update the memory slot before switching
       }
       // either restrieve or save preset
       if ( display_mode == 3 &&  ! button[8] ) {
         if (loadSave == 0 && ! loading ) {
           loading = true;
+          updateMemorySlot(selected_preset); // first update the memory slot
           selected_preset = current_track;
           //DAC.end();
           saveToEEPROM(current_track);
@@ -515,6 +519,7 @@ void loop() {
 
         } else if (loadSave == 1 && ! loading && selected_preset != current_track) {
           loading = true; // make sure audio is off
+          updateMemorySlot(selected_preset); // first update the memory slot
           selected_preset = current_track; // set selected preset
           loadFromMemorySlot(current_track); // load it from memory
           loading = false;
@@ -529,6 +534,7 @@ void loop() {
           voice[current_track].sampleincrement = pitch;  // change sample pitch if pot has moved enough
           display_pitch = constrain( (pitch >> 5), 1, 255) ; // show 8 bits, which we also store
           currentConfig.pitch[i] = display_pitch; // update config for this channel
+          updateMemorySlot(current_track); // update the memory slot before switching
         }
       }
 
@@ -538,6 +544,7 @@ void loop() {
         voice[current_track].level = level;
         display_vol = constrain( ( level >> 2 ), 1, 255); // show 8 bits which we store
         currentConfig.volume[i] = display_vol;
+        updateMemorySlot(current_track); // update the memory slot before switching
 
       }
       if (!potlock[0] && display_mode == 1 ) {
@@ -546,6 +553,7 @@ void loop() {
         seq[i].fills = map(potvalue[0], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
         currentConfig.randy[i] = 1;
+        updateMemorySlot(current_track); // update the memory slot before switching
       }
 
       // set track euclidean triggers if either pot has moved enough
@@ -553,12 +561,14 @@ void loop() {
         seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateSequence(seq[i].fills, 16);
         seq[i].trigger->resetSequence(); // set to 0
+        updateMemorySlot(current_track); // update the memory slot before switching
 
       }
       //trig/retrig play
       if ( display_mode == 2 && i < 8 && voice[current_track].isPlaying == false) {
         voice[current_track].sampleindex = 0; // trigger sample for this track
         voice[current_track].isPlaying = true;
+        
       }
       /*
         if (!potlock[2]) {
@@ -567,13 +577,14 @@ void loop() {
         }
       */
 
-      // update display values on
-      display_pat = String(seq[i].trigger->textSequence);
-      display_pitch = currentConfig.pitch[i] ;
-      display_vol = currentConfig.volume[i] ;
-      display_repeats = seq[i].repeats;
+
     }
   }
+  // update display values on
+  display_pat = String(seq[current_track].trigger->textSequence);
+  display_pitch = currentConfig.pitch[current_track] ;
+  display_vol = currentConfig.volume[current_track] ;
+  display_repeats = seq[current_track].repeats;
 
 
   // now, after buttons check if only encoder moved and no buttons

@@ -92,7 +92,7 @@ uint8_t euclid::getRepeats(){
 
 void euclid::setTextSequence(){
   
-   for (int i = 0; i < NUMBER_OF_STEPS; i++) textSequence[i] = (euclidianPattern[i] == 0) ? '0' : '1'; 
+   for (int i = 0; i < NUMBER_OF_STEPS; i++) this->textSequence[i] = (this->euclidianPattern[i] == 0) ? '0' : '1'; 
    //textSequence[NUMBER_OF_STEPS+1] = '\0';
    //Serial.println(textSequence);
 }
@@ -100,6 +100,7 @@ void euclid::setTextSequence(){
 char euclid::getTextSequence(){
   return *textSequence;
 }
+
 void euclid::doStep() {
   if (this->stepCounter < (numberOfSteps - 1)) {
     this->stepCounter++;
