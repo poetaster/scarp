@@ -1,3 +1,18 @@
+// util int to char array
+void int_to_char(int num, char *result) {
+  int temp = num;
+  int len = 0;
+  while (temp > 0) {
+    len++;
+    temp /= 10;
+  }
+  for (int i = len - 1; i >= 0; i--) {
+    result[i] = num % 10 + '0';
+    num /= 10;
+  }
+  result[len] = '\0';
+}
+
 // Originaly from todbot's sequencer
 
 typedef struct {
@@ -32,6 +47,37 @@ const pos_t edit_text_offset = { .x = 3, .y = 22,  .str = "" };
 const int gate_bar_width = 14;
 const int gate_bar_height = 4;
 
+void displayStart() {
+  display.clearDisplay();
+
+  display.cp437(true);
+
+  // bpm
+  display.setCursor(bpm_text_pos.x, bpm_text_pos.y);
+  display.print("Detected BPM: ");
+  display.print(bpm);
+    // display load
+
+  // seq info / meta
+  display.setCursor(seq_info_pos.x, seq_info_pos.y);
+  display.print("FILLS: ");
+  display.print((String)currentConfig.fills[0]);
+
+  // seqno
+  display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
+  display.print("PITCH: ");
+  display.print((String)currentConfig.sample[0]);  // user sees 1-8
+
+  // seq info / meta
+  display.setCursor(play_text_pos.x, play_text_pos.y);
+  display.print("MODE: ");
+  display.print(display_mode);
+    
+  display.setCursor(pat_text_pos.x, pat_text_pos.y);
+  display.print("Loading: ");
+  display.print(selected_preset);
+  display.display();
+}
 
 void displayLoadSaveUpdate() {
   display.clearDisplay();

@@ -1,6 +1,6 @@
-/* Copyright 2023 Rich Heslip, 2024 Mark Washeim
+/* Copyright 2023 Rich Heslip, 2024-2025 Mark Washeim
 
-  Author: Rich Heslip
+  Author: Rich Heslip (ORIGINAL AUTHOR)
   Author: Mark Washeim <blueprint@poetaster.de>
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -56,7 +56,7 @@
 //#include "filter.h"
 
 bool debug = true;
-bool device_initialized = false;
+uint8_t device_initialized = 0;
 
 // display setup works with adafruit SSD1306 or SH1106G
 const int dw = 128;
@@ -264,10 +264,10 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
 
 // include here to avoid forward references - I'm lazy :)
-
 #include "seq.h"
-#include "display.h"
 #include "eeprom.h"
+#include "display.h"
+
 
 bool starting = false;
 
@@ -348,35 +348,25 @@ void setup() {
   pinMode(23, OUTPUT); // thi is to switch to PWM for power to avoid ripple noise
   digitalWrite(23, HIGH);
 
-  // set up Pico PWM audio output
-  DAC.setBuffers(4, 128); // DMA buffers
-  DAC.begin(SAMPLERATE);
+
 
 
 
   // try to retrieve saved preset if not, init slots
   EEPROM.begin(2048); // the 8 slots we save now are only 384 bytes, but it'll probably grow
-  delay(250);
-  selected_preset = EEPROM.read(0); // read first position, stored preset
-  if (debug) Serial.print("selected ");
-
-  /*
-    if (selected_preset <8 && selected_preset > -1) {
-      loadFromEEPROM(selected_preset);
-      updateRythm();
-
-    } else {
-      // initialize all eeprom slots
-      for (uint8_t i = 7; i > -1; i--) {
-        loadFromPreset(i); // load out of our base set in progmem
-        saveToEEPROM(i); // save the config data for this slot
-        saveCurrentPreset(i) ; // save the 'current' preset to eeprom
-      }
-    }
-  */
-
-  display_value(NUM_SAMPLES); // show number of samples on the display
+  delay(750);
   starting = true;
+
+
+  // displayStart();
+
+  delay(100);
+  display_value(NUM_SAMPLES); // show number of samples on the display
+
+  // set up Pico PWM audio output
+  DAC.setBuffers(4, 128); // DMA buffers
+  DAC.begin(SAMPLERATE);
+
   delay(500);
 }
 
@@ -388,18 +378,41 @@ void loop() {
 
   // we read the first byte to try to get a preset, stored 0-7
   if (starting) {
-    
-    //selected_preset = EEPROM.read(0); // read first position, stored preset
-    
-    loadLastPreset(); // sets selected_preset from base eeprom save point
-    
-    if (selected_preset > -1 && selected_preset < 8) {
-      loadFromEEPROM(selected_preset);
+    loading = true;
+    loadInit();
+    if (device_initialized == 7 ) {
+
+      loadLastPreset(); // sets selected_preset from base eeprom save point
+      if (debug) Serial.println(selected_preset);
+      if (selected_preset > -1 && selected_preset < 8) {
+        loadFromEEPROM(selected_preset);
+        if (debug) Serial.println("retrieved from eeprom");
+      } else {
+        loadFromPreset(0);
+      }
     } else {
-      loadFromPreset(0);
+      if (debug) Serial.println("init device");
+      initializeEEPROM();
+      currentConfig = defaultSlots[0];
+      bpm = currentConfig.tempo;
+      internalClock = currentConfig.internalClock;
+      selected_preset = currentConfig.selectedPreset;
+      saveCurrentPreset(selected_preset);
+
+      updateRythm();
+
+      // copy all the defaults so that we have all presets to begin
+      //loadMemorySlotDefaults(); // copies all progmem into memoryslots
+      // load the first one.
+      //loadFromMemorySlot(0);
+      // set the init flag.
+
+      writeInit();
     }
     starting = false;
+    loading = false;
   }
+
 
   bool anybuttonpressed;
   // timer
@@ -449,9 +462,13 @@ void loop() {
 
       // a track button is pressed
       current_track = i; // keypress selects track we are working on
-      if (display_mode != 3 ) {
-        display_pat = (String) seq[i].trigger->textSequence;
-      }
+
+      // update display values on
+      display_pat = String(seq[i].trigger->textSequence);
+      display_pitch = currentConfig.pitch[i] ;
+      display_vol = currentConfig.volume[i] ;
+      display_repeats = seq[i].repeats;
+
       // use encoder delta with selected button to set sample for track
       if ( (encoder_pos != encoder_pos_last ) && ! button[8] && display_mode == 0) {
         voice[i].isPlaying = false;
@@ -480,7 +497,7 @@ void loop() {
 
         display_repeats = repeats;
         seq[i].trigger->rotate(repeats);
-        display_pat = (String) seq[i].trigger->textSequence;
+        display_pat = String(seq[i].trigger->textSequence);
 
         // if offset is 0, reset
         if (repeats == 0) {
@@ -489,18 +506,26 @@ void loop() {
       }
       // either restrieve or save preset
       if ( display_mode == 3 &&  ! button[8] ) {
-        if (loadSave == 0 && ! loading) {
+        if (loadSave == 0 && ! loading ) {
           loading = true;
           selected_preset = current_track;
-          saveCurrentPreset(selected_preset); // save it
+          DAC.end();
+          delay(100);
           saveToEEPROM(current_track);
+          delay(100);
+          DAC.begin();
           loading = false;
 
-        } else if (loadSave == 1 && ! loading) {
+        } else if (loadSave == 1 && ! loading && selected_preset != current_track) {
           loading = true; // make sure audio is off
           selected_preset = current_track; // set selected preset
+          DAC.end();
+          delay(100);
           loadFromEEPROM(current_track); // load it
+          delay(100);
           saveCurrentPreset(selected_preset); // save it
+          delay(100);
+          DAC.begin();
           loading = false;
         }
       }
@@ -530,7 +555,7 @@ void loop() {
         seq[i].fills = map(potvalue[0], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
         currentConfig.randy[i] = 1;
-        display_pat = (String) seq[i].trigger->textSequence;
+        display_pat = String(seq[i].trigger->textSequence);
       }
 
       // set track euclidean triggers if either pot has moved enough
@@ -538,7 +563,7 @@ void loop() {
         seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateSequence(seq[i].fills, 16);
         seq[i].trigger->resetSequence(); // set to 0
-        display_pat = (String) seq[i].trigger->textSequence;
+        display_pat = String(seq[i].trigger->textSequence);
 
       }
       //trig/retrig play
@@ -564,9 +589,9 @@ void loop() {
   } else if (! anybuttonpressed && encoder_delta && display_mode == 3) {
     // in load save mode, switch between load and save
     if (encoder_delta > 0) {
-      loadSave = 1 ;
+      loadSave = 0 ;
     } else {
-      loadSave = 0;
+      loadSave = 1;
     }
   }
 

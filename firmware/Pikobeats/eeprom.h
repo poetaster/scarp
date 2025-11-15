@@ -14,8 +14,8 @@
 struct ConfigSlot {
   byte fills[8];         // Number of hits per pattern in each channel
   byte offset[8];       // Step offset for each channel
-  byte volume[8];        // Step limit (length) of the pattern for each channel
   byte randy[8];
+  byte volume[8];        // Step limit (length) of the pattern for each channel
   byte pitch[8];  // channels pitch saved as 8 bits << 5
   byte sample[8];  // 0 - 32
   int tempo;                       // Tempo for the preset
@@ -24,15 +24,15 @@ struct ConfigSlot {
   byte selectedPreset;             // last used preset / slot > 10 is an eeprom slot
 };
 
-const ConfigSlot defaultSlots[NUM_PRESETS] PROGMEM = {
+const ConfigSlot defaultSlots[NUM_PRESETS] = PROGMEM {
   { { 4, 6, 5, 4, 3, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 120, 0 , 0, 0 },
   { { 4, 3, 5, 4, 3, 0, 0, 0 }, { 0, 2, 1, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 100, 0 , 0, 0 },
-  { { 6, 2, 5, 4, 3, 0, 0, 0 }, { 0, 1, 0, 0, 0, 0, 0, 0}, { 0, 0, 1, 0, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 90, 0 , 0, 0 },
-  { { 4, 4, 5, 6, 3, 0, 0, 0 }, { 0, 0, 1, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 80, 0 , 0, 0 },
+  { { 6, 2, 5, 4, 3, 0, 0, 0 }, { 0, 1, 0, 0, 0, 0, 0, 0}, { 0, 0, 1, 0, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7},  90, 0 , 0, 0 },
+  { { 4, 4, 5, 6, 3, 0, 0, 0 }, { 0, 0, 1, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7},  80, 0 , 0, 0 },
   { { 6, 5, 4, 4, 3, 0, 0, 0 }, { 0, 1, 0, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 130, 0 , 0, 0 },
-  { { 4, 6, 5, 4, 3, 0, 0, 0 }, { 1, 0, 0, 0, 0, 0, 0, 0}, { 0, 1, 0, 0, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 150, 0 , 0, 0 },
-  { { 4, 6, 5, 4, 3, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 90, 0 , 0, 0 },
-  { { 4, 6, 5, 4, 3, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 100, 0 , 0, 0 },
+  { { 2, 4, 6, 2, 4, 0, 0, 0 }, { 1, 0, 0, 0, 0, 0, 0, 0}, { 0, 1, 0, 0, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 150, 0 , 0, 0 },
+  { { 2, 6, 2, 4, 3, 2, 2, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7},  90, 0 , 0, 0 },
+  { { 4, 4, 3, 4, 3, 1, 2, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 100, 0 , 0, 0 },
 };
 
 ConfigSlot memorySlots[NUM_PRESETS], currentConfig;
@@ -68,10 +68,17 @@ void updateRythm() {
     voice[i].sampleincrement = pitch; // stored as 8 bit
     voice[i].level = level; // 0 - 1023 also 8 bits
     voice[i].sample = sample;
+    if (debug) {
+      Serial.println(hits);
+      Serial.println(offset);
+      Serial.println(level);
+      Serial.println(pitch);
+      Serial.println(sample);
+    }
 
   }
   if (debug) Serial.println("updated patterns");
-  //display_pat = (String) seq[0].trigger->textSequence;
+
 
 
 }
@@ -80,31 +87,30 @@ void updateRythm() {
 void loadDefaultConfig(ConfigSlot *config, int index) {
   if (index >= NUM_PRESETS) index = 0;
   memcpy_P(config, &defaultSlots[index], sizeof(ConfigSlot));
-  
+
 }
 
 void loadFromPreset(int preset) {
-
   if (preset >= sizeof(defaultSlots) / sizeof(ConfigSlot)) preset = 0;
   loadDefaultConfig(&currentConfig, preset);
-
   bpm = currentConfig.tempo;
   internalClock = currentConfig.internalClock;
   if (debug) Serial.println(bpm);
   selected_preset = preset;
-  //period = 60000 / bpm / 4;
-  //setup_complete = true;
 }
 
 // Loading ConfigSlot from memorySlots
 void loadMemoryConfig(ConfigSlot *config, int index) {
   if (index >= NUM_PRESETS) index = 0;
-  memcpy_P(config, &memorySlots[index], sizeof(ConfigSlot));
+  memcpy(config, &memorySlots[index], sizeof(ConfigSlot));
 }
 
 void loadFromMemorySlot(int preset) {
   if (preset >= sizeof(memorySlots) / sizeof(ConfigSlot)) preset = 0;
-  loadMemoryConfig(&currentConfig, preset);
+  //loadMemoryConfig(&currentConfig, preset);
+
+  currentConfig = memorySlots[preset];
+
   bpm = currentConfig.tempo;
   internalClock = currentConfig.internalClock;
   selected_preset = preset;
@@ -145,7 +151,7 @@ void loadInit() {
 
 void writeInit() {
   uint8_t baseAddress = 20;
-  EEPROM.write(baseAddress, 19);
+  EEPROM.write(baseAddress, 7);
   if (EEPROM.commit()) {
     if (debug) Serial.println("EEPROM wrote preset");
   } else {
@@ -184,10 +190,11 @@ void saveToEEPROM(int slot) {
 void initializeEEPROM() {
   //ConfigSlot conf;
   for (uint8_t slot = 0; slot < 8; slot++) {
-    loadFromPreset(slot);
+    currentConfig = defaultSlots[slot];
     saveToEEPROM(slot);
+    delay(50);
+
   }
-  loading = false; // allow input to trigger again
 }
 
 /*
@@ -197,7 +204,6 @@ void initializeEEPROM() {
 void loadMemorySlots() {
 
   for (uint8_t slot = 0; slot < 8; slot++) {
-
     int baseAddress = EEPROM_START_ADDRESS + (slot * CONFIG_SIZE);
 
     if (baseAddress + CONFIG_SIZE <= EEPROM.length()) {
@@ -216,6 +222,13 @@ void loadMemorySlots() {
     }
   }
 }
+void loadMemorySlotDefaults() {
+  for (uint8_t i = 0; i < 8; i++) {
+    //memorySlots[i] = defaultSlots[i];
+    memcpy(&memorySlots[i], &defaultSlots[i], sizeof(ConfigSlot));
+    if (debug) Serial.println(memorySlots[i].tempo);
+  }
+}
 
 /*
    On save, update memorySlots
@@ -232,15 +245,11 @@ void loadFromEEPROM(int slot) {
     EEPROM.get(baseAddress, currentConfig);
     bpm = currentConfig.tempo;
     internalClock = currentConfig.internalClock;
-    lastUsedSlot = slot;
-    selected_preset = currentConfig.selectedPreset;
+    //lastUsedSlot = slot;
+    //selected_preset = currentConfig.selectedPreset;
     if (debug) Serial.println(bpm);
-    
-
     //period = 60000 / bpm / 4;  // Update period with loaded tempo
-
     //setup_complete = true;
-
     updateRythm();               // Refresh
 
   } else {
@@ -253,7 +262,7 @@ void loadFromEEPROM(int slot) {
 void initializeCurrentConfig(bool loadDefaults = false) {
   if (loadDefaults) {
     // Load default configuration from PROGMEM
-    memcpy_P(&currentConfig, &defaultSlots[0], sizeof(ConfigSlot));  // Load the first default slot as the initial configuration
+    memcpy(&currentConfig, &defaultSlots[0], sizeof(ConfigSlot));  // Load the first default slot as the initial configuration
   } else {
     // Load configuration from EEPROM
     int baseAddress = EEPROM_START_ADDRESS;  // Start address for the first slot
