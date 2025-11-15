@@ -439,7 +439,9 @@ void loop() {
         encoder_held = true;
         display_mode = display_mode + 1;
         if ( display_mode > 3) { // switched back to play mode
-          display_mode = 0;
+          display_mode = 0; 
+          // we're movingout of load save, so save current selected preset
+          saveCurrentPreset(selected_preset);
           //configure_sequencer();
         }
       }
@@ -515,9 +517,6 @@ void loop() {
           loading = true; // make sure audio is off
           selected_preset = current_track; // set selected preset
           loadFromMemorySlot(current_track); // load it from memory
-          //DAC.end();
-          saveCurrentPreset(selected_preset); // save it
-          //DAC.begin();
           loading = false;
         }
       }
