@@ -19,7 +19,7 @@ void euclid::generateSequence( uint8_t fills, uint8_t steps){
     }
   }
   // now generate the text rep.
-  euclid::setTextSequence();
+  this->setTextSequence();
 }
 
 void euclid::generateRandomSequence( uint8_t fills, uint8_t steps){
@@ -52,7 +52,7 @@ void euclid::generateRandomSequence( uint8_t fills, uint8_t steps){
     }
   //}
     // now generate the text rep.
-  euclid::setTextSequence();
+  this->setTextSequence();
 }
 
 void euclid::rotate(uint8_t _steps) {
@@ -66,7 +66,7 @@ void euclid::rotate(uint8_t _steps) {
     }
     euclidianPattern[0] = temp;
   }
-  euclid::setTextSequence();
+  this->setTextSequence();
 
 }
 
