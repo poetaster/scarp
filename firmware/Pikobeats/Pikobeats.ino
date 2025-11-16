@@ -255,8 +255,9 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
 //#include "80s.h"
 
-//#include "angularj.h"
-#include "mixp.h"
+#include "angularj.h"
+//#include "mixp.h"
+
 //#include "beatbox.h"
 //#include "bbox.h"
 

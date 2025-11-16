@@ -136,12 +136,12 @@ void displayUpdate() {
   display.print(display_mode);
 
   display.setCursor(seq_info_pos.x, seq_info_pos.y);
-  display.print("VOL: ");
-  display.print(display_vol);
-
-  display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
   display.print("PITCH: ");
   display.print(display_pitch);  // user sees 1-8
+
+  display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
+  display.print("VOL: ");
+  display.print(display_vol);
 
   display.setCursor(play_text_pos.x, play_text_pos.y);
   display.print("HITS: ");
