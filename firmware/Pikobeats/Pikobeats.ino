@@ -228,8 +228,8 @@ String display_pat;
 
 // setup audio hardware
 
-#define SAMPLERATE 22050
-//#define SAMPLERATE 44100 // VCC-GND 16mb flash boards won't overclock fast enough for 44khz ?
+//#define SAMPLERATE 22050
+#define SAMPLERATE 44100 // VCC-GND 16mb flash boards won't overclock fast enough for 44khz ?
 
 PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
@@ -254,9 +254,9 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
 
 //#include "80s.h"
-
-#include "angularj.h"
+//#include "angularj.h"
 //#include "mixp.h"
+#include "tekke.h"
 
 //#include "beatbox.h"
 //#include "bbox.h"
@@ -366,7 +366,7 @@ void setup() {
   if (starting) {
     loading = true;
     loadInit();
-    if (device_initialized == 7 ) {
+    if (device_initialized == 2 ) {
 
       loadLastPreset(); // sets selected_preset from base eeprom save point
       loadMemorySlots();
@@ -504,7 +504,7 @@ void loop() {
         if (loadSave == 0 && ! loading ) {
           loading = true;
           currentConfig.tempo = bpm;
-          //updateMemorySlot(selected_preset); // update the memory slot before switching
+          updateMemorySlot(selected_preset); // update the memory slot before switching
           selected_preset = current_track;
           //DAC.end();
           saveToEEPROM(current_track);
