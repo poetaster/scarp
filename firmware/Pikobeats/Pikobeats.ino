@@ -209,6 +209,9 @@ enum {
 
 int display_mode = MODE_PLAY;
 uint8_t display_repeats = 0;
+uint8_t display_fills = 0;
+uint8_t display_rand = 0;
+uint8_t display_samp = 0;
 uint8_t display_vol = 175;
 uint8_t display_pitch = 128;
 String display_pat;
@@ -348,26 +351,55 @@ void setup() {
   pinMode(23, OUTPUT); // thi is to switch to PWM for power to avoid ripple noise
   digitalWrite(23, HIGH);
 
-
-
-
+  display_value(NUM_SAMPLES); // show number of samples on the display
 
   // try to retrieve saved preset if not, init slots
   EEPROM.begin(2048); // the 8 slots we save now are only 384 bytes, but it'll probably grow
-  delay(750);
+  delay(50);
+  
   starting = true;
+ 
 
+ 
+  // we read the first byte to try to get a preset, stored 0-7
+  if (starting) {
+    loading = true;
+    loadInit();
+    if (device_initialized == 7 ) {
 
-  // displayStart();
+      loadLastPreset(); // sets selected_preset from base eeprom save point
+      loadMemorySlots();
+      if (selected_preset > -1 && selected_preset < 8) {
+       
+        loadFromMemorySlot(selected_preset);
+        
+      } else {
+        loadFromMemorySlot(0);
+      }
+      
+    } else {
+      // first use of device, so prep it.
+      initializeEEPROM(); // first run, get settings into all 8 slots
+      currentConfig = defaultSlots[0]; // current config is default 0
+      bpm = currentConfig.tempo;
+      internalClock = currentConfig.internalClock;
+      selected_preset = 0;
+      saveCurrentPreset(selected_preset); // save to eeprom
 
-  delay(100);
-  display_value(NUM_SAMPLES); // show number of samples on the display
+      updateRythm(); // update the sequencers
 
+      writeInit(); // set flag so we don't repeat
+    }
+    
+    starting = false;
+    loading = false;
+  }
+
+  // now start the dac
   // set up Pico PWM audio output
   DAC.setBuffers(4, 128); // DMA buffers
   DAC.begin(SAMPLERATE);
-
-  delay(500);
+  delay(100);
 }
 
 
@@ -376,49 +408,11 @@ void setup() {
 
 void loop() {
 
-  // we read the first byte to try to get a preset, stored 0-7
-  if (starting) {
-    loading = true;
-    loadInit();
-    if (device_initialized == 7 ) {
-
-      loadLastPreset(); // sets selected_preset from base eeprom save point
-
-      if (debug) Serial.println(selected_preset);
-      if (selected_preset > -1 && selected_preset < 8) {
-        loadMemorySlots();
-        loadFromMemorySlot(selected_preset);
-        if (debug) Serial.println("retrieved from eeprom");
-      } else {
-        loadFromPreset(0);
-      }
-    } else {
-      if (debug) Serial.println("init device");
-      initializeEEPROM();
-      currentConfig = defaultSlots[0];
-      bpm = currentConfig.tempo;
-      internalClock = currentConfig.internalClock;
-      selected_preset = currentConfig.selectedPreset;
-      saveCurrentPreset(selected_preset);
-
-      updateRythm();
-
-      // copy all the defaults so that we have all presets to begin
-      //loadMemorySlotDefaults(); // copies all progmem into memoryslots
-      // load the first one.
-      //loadFromMemorySlot(0);
-      // set the init flag.
-
-      writeInit();
-    }
-    starting = false;
-    loading = false;
-  }
-
 
   bool anybuttonpressed;
   // timer
   uint32_t now = millis();
+  
 
 
   // UI handlers
@@ -440,9 +434,6 @@ void loop() {
         display_mode = display_mode + 1;
         if ( display_mode > 3) { // switched back to play mode
           display_mode = 0;
-          // we're movingout of load save, so save current selected preset
-          saveCurrentPreset(selected_preset);
-          
           //configure_sequencer();
         }
       }
@@ -482,7 +473,7 @@ void loop() {
         if (result >= 0 && result <= NUM_SAMPLES - 1) {
           voice[current_track].sample = result;
           currentConfig.sample[i] = result; // save config 0 - 31
-          updateMemorySlot(current_track); // update the memory slot before switching
+          
         }
       }
 
@@ -497,20 +488,22 @@ void loop() {
 
         display_repeats = repeats;
         seq[i].trigger->rotate(repeats);
-
+        currentConfig.offset[i] = repeats;
+        
         // if offset is 0, reset
         if (repeats == 0 && currentConfig.randy[i] == 0) {
           seq[i].trigger->generateSequence(seq[i].fills, 16);
         } else if (repeats == 0 && currentConfig.randy[i] == 1) {
           seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
         }
-        updateMemorySlot(current_track); // update the memory slot before switching
+        
       }
       // either restrieve or save preset
       if ( display_mode == 3 &&  ! button[8] ) {
         if (loadSave == 0 && ! loading ) {
           loading = true;
-          updateMemorySlot(selected_preset); // first update the memory slot
+          currentConfig.tempo = bpm;
+          //updateMemorySlot(selected_preset); // update the memory slot before switching
           selected_preset = current_track;
           //DAC.end();
           saveToEEPROM(current_track);
@@ -519,7 +512,8 @@ void loop() {
 
         } else if (loadSave == 1 && ! loading && selected_preset != current_track) {
           loading = true; // make sure audio is off
-          updateMemorySlot(selected_preset); // first update the memory slot
+          currentConfig.tempo = bpm;
+          updateMemorySlot(selected_preset); // update the memory slot before switching
           selected_preset = current_track; // set selected preset
           loadFromMemorySlot(current_track); // load it from memory
           loading = false;
@@ -534,7 +528,6 @@ void loop() {
           voice[current_track].sampleincrement = pitch;  // change sample pitch if pot has moved enough
           display_pitch = constrain( (pitch >> 5), 1, 255) ; // show 8 bits, which we also store
           currentConfig.pitch[i] = display_pitch; // update config for this channel
-          updateMemorySlot(current_track); // update the memory slot before switching
         }
       }
 
@@ -544,7 +537,6 @@ void loop() {
         voice[current_track].level = level;
         display_vol = constrain( ( level >> 2 ), 1, 255); // show 8 bits which we store
         currentConfig.volume[i] = display_vol;
-        updateMemorySlot(current_track); // update the memory slot before switching
 
       }
       if (!potlock[0] && display_mode == 1 ) {
@@ -553,7 +545,8 @@ void loop() {
         seq[i].fills = map(potvalue[0], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
         currentConfig.randy[i] = 1;
-        updateMemorySlot(current_track); // update the memory slot before switching
+        currentConfig.fills[i] = seq[i].fills;
+        
       }
 
       // set track euclidean triggers if either pot has moved enough
@@ -561,14 +554,15 @@ void loop() {
         seq[i].fills = map(potvalue[1], POT_MIN, POT_MAX, 0, 16);
         seq[i].trigger->generateSequence(seq[i].fills, 16);
         seq[i].trigger->resetSequence(); // set to 0
-        updateMemorySlot(current_track); // update the memory slot before switching
+        currentConfig.randy[i] = 0;
+        currentConfig.fills[i] = seq[i].fills;
 
       }
       //trig/retrig play
       if ( display_mode == 2 && i < 8 && voice[current_track].isPlaying == false) {
         voice[current_track].sampleindex = 0; // trigger sample for this track
         voice[current_track].isPlaying = true;
-        
+
       }
       /*
         if (!potlock[2]) {
@@ -579,17 +573,27 @@ void loop() {
 
 
     }
+    // update display values on and update config object with changes
+    // do not update values on load save screen
+    if (current_track > -1 && current_track < 8 && display_mode != 3) {
+      display_pat = String(seq[current_track].trigger->textSequence);
+      display_pitch = currentConfig.pitch[current_track] ;
+      display_vol = currentConfig.volume[current_track] ;
+      display_repeats = seq[current_track].repeats;
+      display_fills = seq[current_track].fills;
+      display_rand = currentConfig.randy[current_track];
+      display_samp = voice[current_track].sample;
+      currentConfig.tempo = bpm;
+      updateMemorySlot(selected_preset); // update the memory slot before switching
+    }
   }
-  // update display values on
-  display_pat = String(seq[current_track].trigger->textSequence);
-  display_pitch = currentConfig.pitch[current_track] ;
-  display_vol = currentConfig.volume[current_track] ;
-  display_repeats = seq[current_track].repeats;
+
 
 
   // now, after buttons check if only encoder moved and no buttons
   if (! anybuttonpressed && encoder_delta && display_mode != 3) {
     bpm = bpm + encoder_delta;
+    currentConfig.tempo = bpm;
     displayUpdate();
     display_value(bpm - 50);
   } else if (! anybuttonpressed && encoder_delta && display_mode == 3) {
@@ -654,10 +658,12 @@ void setup1() {
 // second core calculates samples and sends to DAC
 void loop1() {
 
+  /*
   if (RPM > bpm + 1 || RPM < bpm - 1 && RPM > 49) {
     //reset = true; //reset seq
     bpm = RPM;
-  }
+  }*/
+
   if (! loading )
   {
     do_clocks();  // process sequencer clocks when no file saving operations are under way

@@ -25,14 +25,14 @@ struct ConfigSlot {
 };
 
 const ConfigSlot defaultSlots[NUM_PRESETS] = PROGMEM {
-  { { 4, 6, 5, 4, 3, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 120, 0 , 0, 0 },
-  { { 4, 3, 5, 4, 3, 0, 0, 0 }, { 0, 2, 1, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 100, 0 , 0, 0 },
-  { { 6, 2, 5, 4, 3, 0, 0, 0 }, { 0, 1, 0, 0, 0, 0, 0, 0}, { 0, 0, 1, 0, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7},  90, 0 , 0, 0 },
-  { { 4, 4, 5, 6, 3, 0, 0, 0 }, { 0, 0, 1, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7},  80, 0 , 0, 0 },
-  { { 6, 5, 4, 4, 3, 0, 0, 0 }, { 0, 1, 0, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 130, 0 , 0, 0 },
-  { { 2, 4, 6, 2, 4, 0, 0, 0 }, { 1, 0, 0, 0, 0, 0, 0, 0}, { 0, 1, 0, 0, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 150, 0 , 0, 0 },
-  { { 2, 6, 2, 4, 3, 2, 2, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7},  90, 0 , 0, 0 },
-  { { 4, 4, 3, 4, 3, 1, 2, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 4, 5, 6, 7}, 100, 0 , 0, 0 },
+  { { 4, 6, 5, 4, 7, 0, 0, 0 }, { 0, 0, 0, 0, 1, 0, 0, 0}, { 0, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 208, 175, 175, 175, 175}, {128, 128, 128, 174, 128, 128, 128, 128}, {0, 1, 2, 19, 12, 5, 6, 7 }, 120,  0 , 0, 0 },
+  { { 4, 3, 5, 0, 13, 4, 0, 0 }, { 0, 2, 1, 0, 0, 0, 0, 0}, { 0, 0, 0, 0, 0, 1, 0, 0},  {175, 175, 175, 110, 175, 175, 175, 175}, {128, 128, 128, 124, 128, 128, 128, 128}, {8, 9, 10, 11, 12, 13, 14, 15  }, 100, 0 , 0, 0 },
+  { { 2, 4, 6, 2, 4, 0, 6, 0 }, { 1, 0, 0, 1, 0, 0, 0, 0}, { 0, 1, 0, 0, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 27, 4, 5, 6, 7 }, 150,  0 , 0, 0 },
+  { { 6, 2, 5, 4, 3, 0, 2, 0 }, { 0, 1, 0, 0, 0, 0, 1, 0}, { 0, 0, 1, 0, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {16, 17, 18, 19, 20, 21, 22, 23}, 162, 0 , 0, 0 },
+  { { 5, 4, 6, 2, 4, 0, 6, 0 }, { 1, 0, 0, 0, 0, 0, 0, 0}, { 0, 1, 0, 0, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {0, 1, 2, 3, 12, 5, 6, 7 }, 150, 0 , 0, 0 },
+  { { 4, 4, 5, 6, 6, 0, 0, 0 }, { 0, 1, 1, 0, 0, 0, 0, 0}, { 1, 0, 0, 1, 0, 0, 0, 0},  {175, 175, 175, 175, 175, 175, 175, 175}, {128, 128, 128, 128, 128, 128, 128, 128}, {24, 25, 26, 27, 28, 29, 30, 31},  104, 0 , 0, 0 },
+  { { 6, 6, 2, 0, 3, 2, 5, 0 }, { 0, 1, 0, 2, 0, 0, 0, 0}, { 0, 0, 0, 1, 1, 0, 0, 0},  {175, 175, 175, 132, 175, 175, 175, 175}, {128, 128, 128, 174, 128, 128, 128, 128}, {0, 1, 2, 3, 13, 5, 6, 7 },  110, 0 , 0, 0 },
+  { { 4, 8, 3, 4, 5, 1, 2, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0}, { 1, 0, 0, 1, 1, 0, 0, 0},  {175, 175, 175, 199, 175, 175, 231, 175}, {99, 128, 128, 128, 128, 128, 173, 128}, {24, 1, 2, 3, 12, 5, 6, 7 }, 100, 0 , 0, 0 },
 };
 
 ConfigSlot memorySlots[NUM_PRESETS], currentConfig;
@@ -108,16 +108,10 @@ void loadMemoryConfig(ConfigSlot *config, int index) {
 void loadFromMemorySlot(int preset) {
   if (preset >= sizeof(memorySlots) / sizeof(ConfigSlot)) preset = 0;
   //loadMemoryConfig(&currentConfig, preset);
-
   currentConfig = memorySlots[preset];
-
+  
   bpm = currentConfig.tempo;
   internalClock = currentConfig.internalClock;
-  selected_preset = preset;
-
-  //period = 60000 / bpm / 4;
-  //setup_complete = true;
-
   updateRythm();
 
 }
@@ -186,13 +180,12 @@ void saveToEEPROM(int slot) {
    This function takes the defaul prormem configs and copies them to eeprom
    Thereafter, we can read all eeprom settings at start to reduce noise on loading
 */
-
 void initializeEEPROM() {
   //ConfigSlot conf;
   for (uint8_t slot = 0; slot < 8; slot++) {
     currentConfig = defaultSlots[slot];
+    memorySlots[slot] = defaultSlots[slot];
     saveToEEPROM(slot);
-    delay(50);
 
   }
 }
@@ -200,20 +193,13 @@ void initializeEEPROM() {
 /*
    On device start we read all eeprom slots to be abloe to access them without recourse to eeprom
 */
-
 void loadMemorySlots() {
-
   for (uint8_t slot = 0; slot < 8; slot++) {
     int baseAddress = EEPROM_START_ADDRESS + (slot * CONFIG_SIZE);
 
     if (baseAddress + CONFIG_SIZE <= EEPROM.length()) {
       EEPROM.get(baseAddress, currentConfig);
-      // don't populate garbage
-      if (currentConfig.tempo > 0) {
-        memorySlots[slot] = currentConfig;
-      } else {
-        memorySlots[slot] = defaultSlots[slot];
-      }
+      memorySlots[slot] = currentConfig;
 
     } else {
       // Handle the error
@@ -222,10 +208,12 @@ void loadMemorySlots() {
     }
   }
 }
+
+// not used.
 void loadMemorySlotDefaults() {
   for (uint8_t i = 0; i < 8; i++) {
     //memorySlots[i] = defaultSlots[i];
-    memcpy(&memorySlots[i], &defaultSlots[i], sizeof(ConfigSlot));
+    memcpy_P(&memorySlots[i], &defaultSlots[i], sizeof(ConfigSlot));
     if (debug) Serial.println(memorySlots[i].tempo);
   }
 }
@@ -238,7 +226,7 @@ void updateMemorySlot(int preset) {
   memorySlots[preset] = currentConfig;
 }
 
-
+// load individual. no longer used
 void loadFromEEPROM(int slot) {
   int baseAddress = EEPROM_START_ADDRESS + (slot * CONFIG_SIZE);
   if (baseAddress + CONFIG_SIZE <= EEPROM.length()) {
@@ -258,17 +246,8 @@ void loadFromEEPROM(int slot) {
     return;
   }
 }
-void loadAllFromEEPROM(){
-    int baseAddress = EEPROM_START_ADDRESS + (sizeof(defaultSlots));
-  if (baseAddress + CONFIG_SIZE <= EEPROM.length()) {
-    EEPROM.get(baseAddress, memorySlots);
-  } else {
-    // Handle the error
-    if (debug ) Serial.println("EEPROM Load Error");
-    return;
-  }
-}
 
+// unused
 void initializeCurrentConfig(bool loadDefaults = false) {
   if (loadDefaults) {
     // Load default configuration from PROGMEM

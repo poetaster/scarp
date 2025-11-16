@@ -57,11 +57,16 @@ void displayLoadSaveUpdate() {
   display.setCursor(bpm_text_pos.x, bpm_text_pos.y);
   display.print("BPM: ");
   display.print(bpm);
-
+  
+  display.setCursor(46, trans_text_pos.y);
+  display.print("PRE: ");
+  display.print(selected_preset + 1);
+  display.print(" MODE: ");
+  display.print(display_mode);
   // transpose
- // display.setCursor(trans_text_pos.x, trans_text_pos.y);
- // display.print("VOL: ");
- // display.print(display_vol);
+  // display.setCursor(trans_text_pos.x, trans_text_pos.y);
+  // display.print("VOL: ");
+  // display.print(display_vol);
 
   // seq info / meta
   //display.setCursor(seq_info_pos.x, seq_info_pos.y);
@@ -73,25 +78,16 @@ void displayLoadSaveUpdate() {
   //display.print("PITCH: ");
   //display.print(display_pitch);  // user sees 1-8
 
-  // seq info / meta
-  display.setCursor(play_text_pos.x, play_text_pos.y);
-  display.print("MODE: ");
-  display.print(display_mode);
-  // preset
-  display.setCursor(65, play_text_pos.y);
-  display.print("Pre: ");
-  display.print(selected_preset+1);
-
   // display load
   display.setCursor(pat_text_pos.x, pat_text_pos.y);
   display.print("Load: ");
-  display.print(selected_preset+1);
+  display.print(selected_preset + 1);
 
   // display save
   display.setCursor(pit_text_pos.x, pat_text_pos.y);
   display.print("Save: ");
-  display.print(selected_preset+1);
-  
+  display.print(selected_preset + 1);
+
   // in save mode, default underline
   if (loadSave == 0) {
     display.setCursor(65, 60);
@@ -128,56 +124,40 @@ void displayUpdate() {
     }
   */
 
-  // display.setFont(&myfont2);
-  /*
-    Serial.print("eb1 incremented by: ");
-    Serial.println(eb.increment());
-    Serial.print("eb1 position is: ");
-    Serial.println(eb.position());
-    Serial.print("eb1 clickCount: ");
-    Serial.println(eb.clickCount());
-  */
 
-  /*
-       const pos_t bpm_text_pos    = {.x=0,  .y=57, .str="bpm:%3d" };
-    const pos_t trans_text_pos  = {.x=55, .y=57, .str="trs:%+2d" };
-    const pos_t seqno_text_pos  = {.x=0,  .y=45, .str="seq:%d" };
-    const pos_t seq_info_pos    = {.x=60, .y=45, .str="" };
-    const pos_t play_text_pos   = {.x=110,.y=57, .str="" };
-  */
-  // bpm
   display.setCursor(bpm_text_pos.x, bpm_text_pos.y);
   display.print("BPM: ");
   display.print(bpm);
 
-  // transpose
-  display.setCursor(trans_text_pos.x, trans_text_pos.y);
+  display.setCursor(46, trans_text_pos.y);
+  display.print("PRE: ");
+  display.print(selected_preset + 1);
+  display.print(" MODE: ");
+  display.print(display_mode);
+
+  display.setCursor(seq_info_pos.x, seq_info_pos.y);
   display.print("VOL: ");
   display.print(display_vol);
 
-  // seq info / meta
-  display.setCursor(seq_info_pos.x, seq_info_pos.y);
-  display.print("OFSET: ");
-  display.print(display_repeats);
-
-  // seqno
   display.setCursor(seqno_text_pos.x, seqno_text_pos.y);
   display.print("PITCH: ");
   display.print(display_pitch);  // user sees 1-8
 
-  // seq info / meta
   display.setCursor(play_text_pos.x, play_text_pos.y);
-  display.print("MODE: ");
-  display.print(display_mode);
-
-  // display preset #
-  display.setCursor(pit_text_pos.x, play_text_pos.y);
-  display.print("Preset: ");
-  display.print(selected_preset+1);
+  display.print("HITS: ");
+  display.print(display_fills);
+  display.print(", ");
+  display.print(display_repeats);
   
-
+  display.setCursor(pit_text_pos.x, play_text_pos.y);
+  display.print("SAMP: ");
+  display.print(display_samp);
+  
   display.setCursor(pat_text_pos.x, pat_text_pos.y);
-  display.print("PAT: ");
+  display.print("R: ");
+  display.print(display_rand);
+  
+  display.setCursor(24, pat_text_pos.y);
   display.print(display_pat);
 
   // play/pause
