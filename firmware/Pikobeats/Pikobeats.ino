@@ -255,8 +255,8 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
 //#include "80s.h"
 //#include "angularj.h"
-//#include "mixp.h"
-#include "tekke.h"
+#include "mixp.h"
+//#include "tekke.h"
 
 //#include "beatbox.h"
 //#include "bbox.h"
@@ -366,7 +366,7 @@ void setup() {
   if (starting) {
     loading = true;
     loadInit();
-    if (device_initialized == 2 ) {
+    if (device_initialized == 7 ) {
 
       loadLastPreset(); // sets selected_preset from base eeprom save point
       loadMemorySlots();

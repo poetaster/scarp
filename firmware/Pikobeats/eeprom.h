@@ -109,8 +109,8 @@ void loadFromMemorySlot(int preset) {
   if (preset >= sizeof(memorySlots) / sizeof(ConfigSlot)) preset = 0;
   //loadMemoryConfig(&currentConfig, preset);
   currentConfig = memorySlots[preset];
-  
   bpm = currentConfig.tempo;
+  selected_preset = preset;
   internalClock = currentConfig.internalClock;
   updateRythm();
 
@@ -145,7 +145,7 @@ void loadInit() {
 
 void writeInit() {
   uint8_t baseAddress = 20;
-  EEPROM.write(baseAddress, 2);
+  EEPROM.write(baseAddress, 7);
   if (EEPROM.commit()) {
     if (debug) Serial.println("EEPROM wrote preset");
   } else {
