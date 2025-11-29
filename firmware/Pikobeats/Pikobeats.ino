@@ -711,7 +711,7 @@ void loop1() {
   
   if ( current_clk != last_clk ) {
     clk_count++;
-    if ( clk_count % 2 == 0) {
+    if ( clk_count % 4 == 0) {
       // and play
       syncPulse();
       // sync out
