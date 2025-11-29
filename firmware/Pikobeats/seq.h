@@ -7,17 +7,19 @@
 #define CLOCK_RATE 264000?
 
 #define TEMPO    120 // default tempo
-#define PPQN 24  // clocks per quarter note the POs want 2 pulses per 1/4 note. 
-#define NOTE_DURATION (PPQN/12) // sixteenth note duration
-#define CLOCKPULSE 15 // was 15duration of clock out pulse
+#define PPQN 24  // clocks per quarter note the POs and volcas want 2 pulses per 1/4 note. 
+#define NOTE_DURATION (PPQN/12) // sixteenth note duration well, you know
+#define CLOCKPULSE 15 // 15 duration of clock out pulse, volca style
 
-int16_t bpm = TEMPO; 
+int16_t bpm = TEMPO;
 int32_t lastMIDIclock; // timestamp of last MIDI clock
 int16_t MIDIclocks = PPQN ;//* 2; // midi clock counter
 int16_t MIDIsync = 16;  // number of clocks required to sync BPM
 int16_t useMIDIclock = 0; // true if we are using MIDI clock
 long clocktimer = 0; // clock rate in ms
 bool reset = false; // used to reset bpm from CLOCKIN interrupt
+uint8_t ticks = 0; //we count 2 ticks of incoming pulses to cause the play head to move
+uint8_t last_tick = 0; // count millis to ensure we have discrete incoming pulses
 
 
 // all of the sequencers use the same data structure even though the data may be different in each case
@@ -28,10 +30,10 @@ bool reset = false; // used to reset bpm from CLOCKIN interrupt
 
 struct sequencer {
   public: euclid *trigger;  // euclid object to manage hits and patterns from bastl
-  uint16_t fills;   // how many hits in 16
-  uint16_t repeats;   // set in euclid doStep for now, how often to repeat pattern before new
-  uint8_t  count;  // not used, see euclid doStep
-  int16_t index;    // index of step we are on
+    uint16_t fills;   // how many hits in 16
+    uint16_t repeats;   // set in euclid doStep for now, how often to repeat pattern before new
+    uint8_t  count;  // not used, see euclid doStep
+    int16_t index;    // index of step we are on
 };
 
 
@@ -47,9 +49,9 @@ sequencer seq[NTRACKS] = {
 };
 
 // clock all the sequencers
-// clockperiod is the period of the 24ppqn clock - used for calculating gate times etc - not used as yet
+// clockperiod is the period of the 24ppqn clock - used for calculating gate times etc
 // it loops thru all tracks looking for trigger events to process
-void clocktick (long clockperiod) {
+void clocktick () {
 
   for (uint8_t track = 0; track < NTRACKS; ++track) { // note that triggers are stored MSB first
     if ( seq[track].trigger->getCurrentStep() ) {
@@ -60,7 +62,7 @@ void clocktick (long clockperiod) {
       voice[track].isPlaying = false;
     }
     seq[track].trigger->doStep(); // next step advance
-    
+
   }
 }
 
@@ -70,13 +72,27 @@ void clocktick (long clockperiod) {
 void do_clocks(void) {
   //long clockperiod= (long)(((60.0/(float)bpm)/PPQN)*1000);
   long clockperiod = (long)(((60.0 / (float)bpm) / NOTE_DURATION) * 1000);
-  
+
   if ( (millis() - clocktimer) > clockperiod || reset) {
     clocktimer = millis();
-    clocktick(clockperiod);
+    clocktick();
     digitalWrite(CLOCKOUT, 1); // external clock high
     // reset reset for interrupt
     reset = false;
   }
   if ((millis() - clocktimer) > CLOCKPULSE) digitalWrite(CLOCKOUT, 0); // external clock low
+}
+
+// calculate bpm and clocktick on the basis of incomming clock ticks
+// volcas do 2ppqn for 15ms, rising edge so call do_clocks every two ticks :)
+void syncPulse()
+{
+  long now = millis();
+
+  //long clockperiod = (long)(((60.0 / (float)bpm) / NOTE_DURATION) * 1000);  // not relevant or used
+  // 2 pulsses per quarter note.
+    clocktick();
+    // and off again
+    digitalWrite(CLOCKOUT, 0); // external clock high send the clock on
+
 }

@@ -94,7 +94,6 @@ uint16_t rightRotate(int shift, uint16_t value, uint8_t pattern_length) {
 #define TIMER_INTERRUPT_DEBUG         0
 #define _TIMERINTERRUPT_LOGLEVEL_     4
 #include "RPi_Pico_TimerInterrupt.h"
-unsigned int SWPin = CLOCKIN;
 #define TIMER0_INTERVAL_MS       1
 #define DEBOUNCING_INTERVAL_MS   2// 80
 #define LOCAL_DEBUG              1
@@ -108,9 +107,9 @@ float avgRPM    = 0.00;
 volatile int debounceCounter;
 
 int current_track = 0; // track we are working on
+
 // input clk tracking
 volatile int clk_state_last; // track the CLOCKIN pin state.
-
 int clk_state = 0;
 int clk_hits = 0;
 uint32_t clk_sync_ms = 0;
@@ -119,22 +118,18 @@ volatile int clk_display;
 uint32_t clk_sync_last;
 
 
+
 bool TimerHandler0(struct repeating_timer *t)
 {
   (void) t;
-  //if( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin) && debounceCounter >= DEBOUNCING_INTERVAL_MS)
-  if ( digitalRead(SWPin) && clk_state_last != digitalRead(SWPin)) {
+
+  if ( digitalRead(CLOCKIN) && clk_state_last != digitalRead(CLOCKIN)) {
     //min time between pulses has passed
     // calculate bpm
     RPM = (float) ( 60000.0f / ( rotationTime * TIMER0_INTERVAL_MS ) / 2.0f );
     clk_display = RPM;
     // these are for the sequencer
     sync = true;
-
-#if (TIMER_INTERRUPT_DEBUG > 0)
-    Serial.print("rt = "); Serial.print(RPM);
-    Serial.print(", rotationTime ms = "); Serial.println(rotationTime * TIMER0_INTERVAL_MS);
-#endif
     rotationTime = 0;
     debounceCounter = 0;
   } else {
@@ -145,15 +140,12 @@ bool TimerHandler0(struct repeating_timer *t)
     // If idle, set RPM to 0, don't increase rotationTime
     sync = false ;// flag for seq.h
     RPM = 0;
-#if (TIMER_INTERRUPT_DEBUG > 0)
-    Serial.print("RPM = "); Serial.print(RPM); Serial.print(", rotationTime = "); Serial.println(rotationTime);
-#endif
     rotationTime = 0;
   } else {
     rotationTime++;
   }
 
-  clk_state_last = digitalRead(SWPin);
+  clk_state_last = digitalRead(CLOCKIN);
   return true;
 
 }
@@ -216,6 +208,10 @@ uint8_t display_vol = 175;
 uint8_t display_pitch = 128;
 String display_pat;
 
+int modulation_timer = 0;
+int rotation_timer = 0;
+uint8_t last_mod_chan = 0;
+uint8_t last_rot_chan = 0;
 
 // from pikocore filter NOT used currently
 /*
@@ -357,11 +353,11 @@ void setup() {
   // try to retrieve saved preset if not, init slots
   EEPROM.begin(2048); // the 8 slots we save now are only 384 bytes, but it'll probably grow
   delay(50);
-  
-  starting = true;
- 
 
- 
+  starting = true;
+
+
+
   // we read the first byte to try to get a preset, stored 0-7
   if (starting) {
     loading = true;
@@ -371,13 +367,13 @@ void setup() {
       loadLastPreset(); // sets selected_preset from base eeprom save point
       loadMemorySlots();
       if (selected_preset > -1 && selected_preset < 8) {
-       
+
         loadFromMemorySlot(selected_preset);
-        
+
       } else {
         loadFromMemorySlot(0);
       }
-      
+
     } else {
       // first use of device, so prep it.
       initializeEEPROM(); // first run, get settings into all 8 slots
@@ -391,7 +387,7 @@ void setup() {
 
       writeInit(); // set flag so we don't repeat
     }
-    
+
     starting = false;
     loading = false;
   }
@@ -401,6 +397,8 @@ void setup() {
   DAC.setBuffers(4, 128); // DMA buffers
   DAC.begin(SAMPLERATE);
   delay(100);
+  modulation_timer = millis();
+  rotation_timer = millis();
 }
 
 
@@ -413,7 +411,7 @@ void loop() {
   bool anybuttonpressed;
   // timer
   uint32_t now = millis();
-  
+
 
 
   // UI handlers
@@ -474,7 +472,7 @@ void loop() {
         if (result >= 0 && result <= NUM_SAMPLES - 1) {
           voice[current_track].sample = result;
           currentConfig.sample[i] = result; // save config 0 - 31
-          
+
         }
       }
 
@@ -490,14 +488,14 @@ void loop() {
         display_repeats = repeats;
         seq[i].trigger->rotate(repeats);
         currentConfig.offset[i] = repeats;
-        
+
         // if offset is 0, reset
         if (repeats == 0 && currentConfig.randy[i] == 0) {
           seq[i].trigger->generateSequence(seq[i].fills, 16);
         } else if (repeats == 0 && currentConfig.randy[i] == 1) {
           seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
         }
-        
+
       }
       // either restrieve or save preset
       if ( display_mode == 3 &&  ! button[8] ) {
@@ -547,7 +545,7 @@ void loop() {
         seq[i].trigger->generateRandomSequence(seq[i].fills, 16);
         currentConfig.randy[i] = 1;
         currentConfig.fills[i] = seq[i].fills;
-        
+
       }
 
       // set track euclidean triggers if either pot has moved enough
@@ -631,6 +629,49 @@ void loop() {
     pot_timer = now;
   }
 
+  // do random modulation on volume
+
+  if ( (now - modulation_timer ) > 50 ) {
+
+    // set a new channel
+    int chan = constrain ( (random(8) - 1) , 0, 7) ;
+
+    // don't do this if the channels are playing
+    if (  voice[chan].isPlaying == false && voice[last_mod_chan].isPlaying == false ) {
+
+      // restore the configured volume of last modified
+      voice[last_mod_chan].level = ( currentConfig.volume[last_mod_chan] << 2);
+
+      // set a new level based on previous
+      int level = constrain( random(voice[chan].level) , 300, voice[chan].level);
+      voice[chan].level = level;
+      last_mod_chan = chan;
+
+    }
+
+    modulation_timer = now;
+
+  }
+
+
+  // do shift of a channel offset every 2 seconds, but don't do this if we're modifing the settings.
+  /*
+    if ( (now - rotation_timer ) > 5000 && display_mode != 1 ) {
+
+      int chan = constrain ( (random(8) - 1) , 0, 7) ;
+      int rep = constrain ( (random(4) - 1) , 0, 3) ;
+
+      loading = true; // avoid advancing head
+      if ( voice[chan].isPlaying == false ) {
+        seq[chan].trigger->resetSequence();
+
+        last_rot_chan = chan;
+      }
+      loading = false;
+      rotation_timer = now; // reset timer
+    }
+  */
+
   // if display is not busy show track triggers on leds
   if ((now - display_timer) > DISPLAY_TIME) {
 
@@ -656,20 +697,41 @@ void setup1() {
   delay (2000); // wait for main core to start up perhipherals
 }
 
+// this is duplicating the timer work at the beginning. sigh.
+bool current_clk = false;
+bool last_clk = false;
+long clk_count = 0;
+
 // second core calculates samples and sends to DAC
 void loop1() {
 
-  /*
-  if (RPM > bpm + 1 || RPM < bpm - 1 && RPM > 49) {
+  // we're just counting state transitions and every second pulse is
+  // a clock tick. if there is not  input see the RPM ....
+  current_clk = digitalRead(CLOCKIN);
+  
+  if ( current_clk != last_clk ) {
+    clk_count++;
+    if ( clk_count % 2 == 0) {
+      // and play
+      syncPulse();
+      // sync out
+      digitalWrite(CLOCKOUT, 1);
+    }
+  }
+  last_clk = current_clk;
+
+
+  // we have input which we measure the time of or not. if not, do internal clocks.
+  // this is crap :)
+  if ( RPM > bpm + 1 || RPM < bpm - 1 && RPM > 49) {
     //reset = true; //reset seq
     bpm = RPM;
-  }*/
+  } else {
+    // use internal clock if no input
+    do_clocks();
+  }
 
-  if (! loading )
-  {
-    do_clocks();  // process sequencer clocks when no file saving operations are under way
-
-
+  if (! loading ) {
 
     int32_t newsample, samplesum = 0, filtersum;
     uint32_t index;
@@ -690,7 +752,9 @@ void loop1() {
         samp1 = sample[tracksample].samplearray[index + 1]; // get the second sample
         delta = samp1 - samp0;
         newsample = (int32_t)samp0 + ((int32_t)delta * ((int32_t)voice[track].sampleindex & 0x0fff)) / 4096; // interpolate between the two samples
+
         //samplesum+=((int32_t)samp0+(int32_t)delta*(sample[i].sampleindex & 0x0fff)/4096)*sample[i].play_volume;
+
         samplesum += (newsample * (127 * voice[track].level)) / 1000;
         voice[track].sampleindex += voice[track].sampleincrement; // add step increment
       }
