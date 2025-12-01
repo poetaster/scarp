@@ -630,7 +630,10 @@ void loop() {
   }
 
   // do random modulation on volume
-
+  // this is not so nice although it does work
+  // it should be a gradual change over time,
+  // not a hard cut
+/*
   if ( (now - modulation_timer ) > 50 ) {
 
     // set a new channel
@@ -652,6 +655,7 @@ void loop() {
     modulation_timer = now;
 
   }
+  */
 
 
   // do shift of a channel offset every 2 seconds, but don't do this if we're modifing the settings.
@@ -705,15 +709,17 @@ long clk_count = 0;
 // second core calculates samples and sends to DAC
 void loop1() {
 
+   bool externalSync;
   // we're just counting state transitions and every second pulse is
   // a clock tick. if there is not  input see the RPM ....
   current_clk = digitalRead(CLOCKIN);
   
   if ( current_clk != last_clk ) {
     clk_count++;
-    if ( clk_count % 4 == 0) {
+    if ( clk_count % 2 == 0) {
       // and play
-      syncPulse();
+      reset = true;
+      do_clocks();
       // sync out
       digitalWrite(CLOCKOUT, 1);
     }
@@ -722,12 +728,14 @@ void loop1() {
 
 
   // we have input which we measure the time of or not. if not, do internal clocks.
-  // this is crap :)
+  // this is crappy, but works :)
   if ( RPM > bpm + 1 || RPM < bpm - 1 && RPM > 49) {
     //reset = true; //reset seq
     bpm = RPM;
+    externalSync = true;
   } else {
     // use internal clock if no input
+    externalSync = false;
     do_clocks();
   }
 
@@ -748,6 +756,7 @@ void loop1() {
       index = voice[track].sampleindex >> 12; // get the integer part of the sample increment
       if (index >= sample[tracksample].samplesize) voice[track].isPlaying = false; // have we played the whole sample?
       if (voice[track].isPlaying) { // if sample is still playing, do interpolation
+        
         samp0 = sample[tracksample].samplearray[index]; // get the first sample to interpolate
         samp1 = sample[tracksample].samplearray[index + 1]; // get the second sample
         delta = samp1 - samp0;
@@ -758,6 +767,7 @@ void loop1() {
         samplesum += (newsample * (127 * voice[track].level)) / 1000;
         voice[track].sampleindex += voice[track].sampleincrement; // add step increment
       }
+      
     }
 
     samplesum = samplesum >> 7; // adjust for play_volume multiply above

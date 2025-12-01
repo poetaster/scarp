@@ -59,7 +59,7 @@ void clocktick () {
       voice[track].sampleindex = 0; // trigger sample for this track
       voice[track].isPlaying = true;
     } else {
-      voice[track].isPlaying = false;
+      //voice[track].isPlaying = false;
     }
     seq[track].trigger->doStep(); // next step advance
 
