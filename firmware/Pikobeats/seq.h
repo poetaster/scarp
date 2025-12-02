@@ -59,7 +59,7 @@ void clocktick () {
       voice[track].sampleindex = 0; // trigger sample for this track
       voice[track].isPlaying = true;
     } else {
-      //voice[track].isPlaying = false;
+      //voice[track].isPlaying = false; // not here, done at rendering
     }
     seq[track].trigger->doStep(); // next step advance
 
@@ -83,6 +83,7 @@ void do_clocks(void) {
   if ((millis() - clocktimer) > CLOCKPULSE) digitalWrite(CLOCKOUT, 0); // external clock low
 }
 
+// This is not necessary
 // calculate bpm and clocktick on the basis of incomming clock ticks
 // volcas do 2ppqn for 15ms, rising edge so call do_clocks every two ticks :)
 void syncPulse()

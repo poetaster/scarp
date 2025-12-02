@@ -95,14 +95,14 @@ uint16_t rightRotate(int shift, uint16_t value, uint8_t pattern_length) {
 #define _TIMERINTERRUPT_LOGLEVEL_     4
 #include "RPi_Pico_TimerInterrupt.h"
 #define TIMER0_INTERVAL_MS       1
-#define DEBOUNCING_INTERVAL_MS   2// 80
+#define DEBOUNCING_INTERVAL_MS   4// 80
 #define LOCAL_DEBUG              1
 
 // Init RPI_PICO_Timer, can use any from 0-15 pseudo-hardware timers
 RPI_PICO_Timer ITimer0(0);
 
 volatile unsigned long rotationTime = 0;
-float RPM       = 0.00;
+volatile float RPM       = 0.00;
 float avgRPM    = 0.00;
 volatile int debounceCounter;
 
@@ -117,13 +117,13 @@ bool sync = false; // used to detect if we have input sync
 volatile int clk_display;
 uint32_t clk_sync_last;
 
-
-
 bool TimerHandler0(struct repeating_timer *t)
 {
   (void) t;
-
-  if ( digitalRead(CLOCKIN) && clk_state_last != digitalRead(CLOCKIN)) {
+  
+  bool clockstate = digitalRead(CLOCKIN) ;
+  
+  if ( clockstate && clk_state_last != clockstate && (debounceCounter >= DEBOUNCING_INTERVAL_MS ) ) {
     //min time between pulses has passed
     // calculate bpm
     RPM = (float) ( 60000.0f / ( rotationTime * TIMER0_INTERVAL_MS ) / 2.0f );
@@ -145,7 +145,7 @@ bool TimerHandler0(struct repeating_timer *t)
     rotationTime++;
   }
 
-  clk_state_last = digitalRead(CLOCKIN);
+  clk_state_last = clockstate;
   return true;
 
 }
@@ -588,7 +588,6 @@ void loop() {
   }
 
 
-
   // now, after buttons check if only encoder moved and no buttons
   if (! anybuttonpressed && encoder_delta && display_mode != 3) {
     bpm = bpm + encoder_delta;
@@ -711,7 +710,10 @@ void loop1() {
 
    bool externalSync;
   // we're just counting state transitions and every second pulse is
-  // a clock tick. if there is not  input see the RPM ....
+  // a clock tick. if we get 2ppqn, do a reset and clock pulse
+  // else, falls through to the RPM BPM set below which ensures
+  // if there is no clockin, run the clocks by internal time
+  
   current_clk = digitalRead(CLOCKIN);
   
   if ( current_clk != last_clk ) {
@@ -720,14 +722,11 @@ void loop1() {
       // and play
       reset = true;
       do_clocks();
-      // sync out
-      digitalWrite(CLOCKOUT, 1);
     }
   }
   last_clk = current_clk;
-
-
-  // we have input which we measure the time of or not. if not, do internal clocks.
+  
+  // we have input pulses, timer returns BPM. if not, do internal clocks.
   // this is crappy, but works :)
   if ( RPM > bpm + 1 || RPM < bpm - 1 && RPM > 49) {
     //reset = true; //reset seq
