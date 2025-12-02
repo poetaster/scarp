@@ -229,8 +229,6 @@ uint8_t last_rot_chan = 0;
 
 PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
-
-
 /* we have 8 voices that can play any sample when triggered
   this structure holds the settings for each voice
   each voice has 4 samples assigned to it for a total of 32
@@ -254,11 +252,9 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 #include "mixp.h"
 //#include "tekke.h"
 
+// the beatboxes need to be redone 02.12.2025
 //#include "beatbox.h"
 //#include "bbox.h"
-
-// pico 2 only, these are 44khz since there is enough space on the pico2
-//#include "mix.h"
 
 #define NUM_SAMPLES (sizeof(sample)/sizeof(sample_t))
 
