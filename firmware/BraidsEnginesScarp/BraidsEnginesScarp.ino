@@ -1,9 +1,9 @@
 /*
   (c) 2025 blueprint@poetaster.de GPLv3
-   
+
    Based on  mi_Ugens, Copyright (c) 2020 Volker Böhm. All rights reserved. GPLv3
    https://vboehm.net
-      
+
    Mutable Instruments sources, including the stmlib, tides, plaits elements and braids libs are
    MIT License
    Copyright (c)  2020 (emilie.o.gillet@gmail.com)
@@ -73,6 +73,9 @@ const uint16_t bit_reduction_masks[] = {
 
 #include <STMLIB.h>
 #include <BRAIDS.h>
+#include "ADSR.h"
+// create ADSR env
+ADSR *env = new ADSR();
 
 typedef struct
 {
@@ -84,8 +87,11 @@ typedef struct
 
 } PROCESS_CB_DATA ;
 
-char shared_buffer[16384];
+int16_t shared_buffer[BLOCK_SIZE];
 
+
+bool envRelease = false;
+long envTimer = 0;
 
 //float a0 = (440.0 / 8.0) / kSampleRate; //48000.00;
 const size_t   kBlockSize = BLOCK_SIZE;
@@ -94,9 +100,7 @@ const size_t   kBlockSize = BLOCK_SIZE;
 struct Unit {
   braids::Quantizer   *quantizer;
   braids::SignatureWaveshaper *ws;
-
   bool            last_trig;
-
   // resampler
   //SRC_STATE       *src_state;
   PROCESS_CB_DATA pd;
@@ -155,7 +159,8 @@ bool TimerHandler0(struct repeating_timer *t) {
   bool sync = true;
   if ( DAC.availableForWrite() ) {
     for (size_t i = 0; i < BLOCK_SIZE; i++) {
-      DAC.write( voices[0].pd.buffer[i], sync); 
+      //DAC.write( voices[0].pd.buffer[i], sync);
+      DAC.write( shared_buffer[i], sync); //try using envelope
     }
     counter =  1;
   }
@@ -284,7 +289,7 @@ void setup() {
 
   // let's get more resolution
   analogReadResolution(12);
-  
+
   pinMode(BUTTON0, INPUT_PULLUP);
   pinMode(BUTTON1, INPUT_PULLUP);
   pinMode(BUTTON2, INPUT_PULLUP);
@@ -311,6 +316,13 @@ void setup() {
 
   pinMode(23, OUTPUT); // thi is to switch to PWM for power to avoid ripple noise
   digitalWrite(23, HIGH);
+  
+  // initialize enveloope settings
+  env->setAttackRate(.01 * SAMPLERATE);  // .01 second
+  env->setDecayRate(.1 * SAMPLERATE);
+  env->setReleaseRate(3 * SAMPLERATE);
+  env->setSustainLevel(.8);
+
 
   // init the braids voices
   initVoices();
@@ -354,42 +366,11 @@ void initVoices() {
   memset(voices[0].pd.samps, 0, sizeof(float)*BLOCK_SIZE);
 
   voices[0].last_trig = false;
-
-// get some samples initially
+  // get some samples initially
   updateBraidsAudio();
 
 
-  // Initialize the sample rate converter
-  //int error;
-  //int converter = SRC_SINC_FASTEST;       //SRC_SINC_MEDIUM_QUALITY;
 
- /* if ((unit->src_state = src_callback_new(src_input_callback, converter, 1, &error, &unit->pd)) == NULL)
-  {
-  }
-  */
-  
-  //voices[0]->samples = (float *)RTAlloc(unit->mWorld, 1024 * sizeof(float));
-  
-  /*
-         // check resample flag
-      int resamp = (int)IN0(5);
-      CONSTRAIN(resamp, 0, 2);
-      switch(resamp) {
-          case 0:
-              SETCALC(MiBraids_next);
-              //Print("resamp: OFF\n");
-              break;
-          case 1:
-              unit->pd.osc->Init(MI_SAMPLERATE);
-              SETCALC(MiBraids_next_resamp);
-              Print("MiBraids: internal sr: 96kHz - resamp: ON\n");
-              break;
-          case 2:
-              SETCALC(MiBraids_next_reduc);
-              Print("MiBraids: resamp: OFF, reduction: ON\n");
-              break;
-      }
-  */
 }
 
 void cb() {
@@ -401,44 +382,7 @@ void cb() {
   }
 }
 
-/*
-  void audioOutput() {
-  voices[0].voice_->Render(voices[0].patch, voices[0].modulations,  outputPlaits,  plaits::kBlockSize);
 
-  for (int i = 0; i <  plaits::kBlockSize; i++) {
-    uint16_t out = outputPlaits[i].out;
-    if ( DAC.availableForWrite() ) DAC.write( out );
-  }
-  // write samples to DMA buffer - this is a blocking call so it stalls when buffer is full
-  // f.l() + MOZZI_AUDIO_BIAS
-  // left
-  }
-
-  bool canBufferAudioOutput() {
-
-  if ( DAC.availableForWrite() > 32 ) {
-    return true;
-  }
-  return false;
-  }
-
-
-  bool updateAudio() {
-  if (canBufferAudioOutput()) {
-    audioOutput();
-    return true;
-  }
-  return false;
-
-  }
-*/
-
-bool canBufferAudioOutput() {
-  if ( DAC.availableForWrite() > 32 ) {
-    return true;
-  }
-  return false;
-}
 void updateControl() {
 
   //MIDI.read();
@@ -474,12 +418,13 @@ void updateControl() {
           if (button[8]) scaleRoot = i; // change scaleroot if both encoder and another button is pressed.
           pitch_in = currentMode[i]; //freqs[i];
           aNoteOn( pitch_in, 100 );
+          envTimer = now;
         }
         pressedB = i;
       } else {
         modeIndex = modeIndex + 1;
         if (modeIndex == 8 ) modeIndex = 0;
-        
+
         switch (modeIndex) {
           case 0:
             mode = midier::Mode::Ionian;
@@ -537,7 +482,7 @@ void updateBraidsAudio() {
   uint8_t shape = (int)(engine_in);
   if (shape >= braids::MACRO_OSC_SHAPE_LAST)
     shape -= braids::MACRO_OSC_SHAPE_LAST;
-    
+
   osc->set_shape(static_cast<braids::MacroOscillatorShape>(shape));
 
   bool trigger = (trigger_in != 0.0);
@@ -545,18 +490,25 @@ void updateBraidsAudio() {
 
   voices[0].last_trig = trigger;
 
-  if (trigger_flag)
+  if (trigger_flag) {
     osc->Strike();
-    
+    env->gate(true); 
+  } else if  ( millis() - envTimer > 1000 ) { // just a fixed fake gate
+    env->gate(false);
+    envTimer = 0;
+  }
+
   for (int count = 0; count < 32; count += size) {
     // render
     osc->Render(sync_buffer, buffer, size);
 
-    /*for (int i = 0; i < size; ++i) {
-      out[count + i] = buffer[i] * SAMP_SCALE;
-    }*/
   }
   
+  // now apply the envelope
+  for (size_t i = 0; i < 32; ++i) {
+    int16_t sample =   (int16_t) ( (float) voices[0].pd.buffer[i] * env->process() ) ;
+    shared_buffer[i] = sample;
+  }
 }
 
 void loop() {
@@ -674,7 +626,7 @@ void loop1() {
   if (! anybuttonpressed && encoder_delta) {
     float turn = encoder_delta * 0.01f;
     harm_in = harm_in + turn;
-    
+
     //display_value(RATE_value - 50); // this is wrong, bro :)
   }
 
@@ -704,51 +656,4 @@ void loop1() {
 
   displayUpdate();
 
-  //delay(3000);
-
-
-}
-
-
-
-void automatic() {
-  if (engineCount > 16) engineCount = 0;
-
-  /*
-    float trigger = randomDouble(0.0, 2.0); // Dust.kr( LFNoise2.kr(0.1).range(0.1, 7) );
-    float harmonics = randomDouble(0.2, .7); // SinOsc.kr(0.03, 0, 0.5, 0.5).range(0.0, 1.0);
-    float timbre = randomDouble(0.1, .6); //LFTri.kr(0.07, 0, 0.5, 0.5).range(0.0, 1.0);
-    float morph = randomDouble(0.2, 0.6) ; //LFTri.kr(0.11, 0, 0.5, 0.5).squared;
-    float pitch = abs(randomDouble(34, 60)); // TIRand.kr(24, 48, trigger);
-    float octave = randomDouble(0.3, 0.5);
-    float decay = randomDouble(0.05, 0.2);
-    float fm_mod = randomDouble(0.05, 0.2);
-    float lpg = randomDouble(0.05, 0.2);
-
-    //voices[0].patch.frequency_modulation_amount = fm_mod;
-    voices[0].patch.engine = engineCount;
-    //voices[0].transposition_ = 0.;
-    voices[0].octave_ = 0.3;
-    //voices[0].patch.note = pitch;
-    //voices[0].patch.harmonics = harmonics;
-    //voices[0].patch.morph = morph;
-    //voices[0].patch.timbre = timbre;
-    voices[0].patch.decay = decay; //0.5f;
-    voices[0].patch.lpg_colour = lpg;
-
-    if (trigger > 0.2 ) {
-    voices[0].modulations.trigger = trigger;
-    voices[0].modulations.trigger_patched = true;
-    } else {
-    voices[0].modulations.trigger = 0.0f;
-    voices[0].modulations.trigger_patched = false;
-    }
-
-    engineInc++ ;
-    if (engineInc > 5) {
-    engineCount ++; // don't switch engine so often :)
-    engineInc = 0;
-    }
-
-  */
 }
