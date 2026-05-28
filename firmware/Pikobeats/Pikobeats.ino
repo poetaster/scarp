@@ -155,8 +155,8 @@ const int key_pins[] = { 0, 2, 4, 6, 8, 10, 12, 14 };
 const int led_pins[] = { 1, 3, 5, 7, 9, 11, 13, 15 };
 
 // on the long ec11 these are swapped A 19, B 18
-const int encoderA_pin = 19;
-const int encoderB_pin = 18;
+const int encoderA_pin = 18;
+const int encoderB_pin = 19;
 const int encoderSW_pin = 28;
 
 
@@ -249,8 +249,8 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
 //#include "80s.h"
 //#include "angularj.h"
-#include "mixp.h"
-//#include "tekke.h"
+//#include "mixp.h"
+#include "tekke.h"
 
 // the beatboxes need to be redone 02.12.2025
 //#include "beatbox.h"
