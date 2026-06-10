@@ -247,10 +247,11 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 */
 
 
+#include "trippy.h"
 //#include "80s.h"
 //#include "angularj.h"
 //#include "mixp.h"
-#include "tekke.h"
+//#include "tekke.h"
 
 // the beatboxes need to be redone 02.12.2025
 //#include "beatbox.h"
