@@ -786,7 +786,7 @@ void loop1() {
     */
 
     for (int track = 0; track < NTRACKS; ++track) { // look for samples that are playing, scale their volume, and add them up
-      if (!voice[track].isPlaying) continue;
+      //if (!voice[track].isPlaying) continue;
       int16_t tracksample = voice[track].sample;
       uint32_t index = voice[track].sampleindex >> 12; // integer part of the fixed-point index
       // stop one sample early so the index+1 interpolation read stays in bounds
