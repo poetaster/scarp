@@ -561,8 +561,6 @@ void loop() {
           voice[current_track].sampleincrement = pitch;  // change sample pitch if pot has moved enough
           display_pitch = constrain( (pitch >> 5), 1, 255) ; // show 8 bits, which we also store
           currentConfig.pitch[i] = display_pitch; // update config for this channel
-          setLevel(current_track, voice[current_track].level);
-          voice_ramp[current_track] = RAMP_LEN;   // not ramping until first trigger
         }
       }
 
@@ -570,9 +568,9 @@ void loop() {
       if (!potlock[1] && display_mode == 0) {
         int16_t level = (int16_t)(map(potvalue[1], POT_MIN, POT_MAX, 0, 1023));
         voice[current_track].level = level;
+        setLevel(current_track, voice[current_track].level);
         display_vol = constrain( ( level >> 2 ), 1, 255); // show 8 bits which we store
         currentConfig.volume[i] = display_vol;
-
       }
       if (!potlock[0] && display_mode == 1 ) {
         // set track euclidean triggers, random, if either pot has moved enough
