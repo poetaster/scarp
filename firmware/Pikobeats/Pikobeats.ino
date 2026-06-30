@@ -561,6 +561,8 @@ void loop() {
           voice[current_track].sampleincrement = pitch;  // change sample pitch if pot has moved enough
           display_pitch = constrain( (pitch >> 5), 1, 255) ; // show 8 bits, which we also store
           currentConfig.pitch[i] = display_pitch; // update config for this channel
+          setLevel(current_track, voice[current_track].level);
+          voice_ramp[current_track] = RAMP_LEN;   // not ramping until first trigger
         }
       }
 
