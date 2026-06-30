@@ -63,15 +63,18 @@ void displayLoadSaveUpdate() {
   display.print(selected_preset + 1);
   display.print(" MODE: ");
   display.print(display_mode);
+
   // transpose
-  // display.setCursor(trans_text_pos.x, trans_text_pos.y);
-  // display.print("VOL: ");
-  // display.print(display_vol);
+  //display.setCursor(trans_text_pos.x, trans_text_pos.y);
+  //display.print("Status: ");
+  //display.print(saveStatus);
 
   // seq info / meta
-  //display.setCursor(seq_info_pos.x, seq_info_pos.y);
+  display.setCursor(seq_info_pos.x, seq_info_pos.y);
   //display.print("OFSET: ");
   //display.print(display_repeats);
+  display.print("Status: ");
+  display.print(saveStatus);
 
   // seqno
   //display.setCursor(seqno_text_pos.x, seqno_text_pos.y);

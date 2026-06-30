@@ -53,6 +53,7 @@
 #include "io.h"
 #include "euclid.h"
 
+#include <math.h>     // tanhf for the output soft-clip
 //#include "filter.h"
 
 bool debug = false;
@@ -223,10 +224,7 @@ uint8_t last_rot_chan = 0;
 //#define MONITOR_CPU  // define to monitor Core 2 CPU usage on pin CPU_USE
 
 // setup audio hardware
-
-//#define SAMPLERATE 22050
 #define SAMPLERATE 44100 // VCC-GND 16mb flash boards won't overclock fast enough for 44khz ?
-
 PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 
 /* we have 8 voices that can play any sample when triggered
@@ -245,13 +243,17 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
   sampledefs.h contains other information not used by this program e.g. the name of the sample file - I wrote it for another project
    wave2header also creates "samples.h" which #includes all the generated header files
 */
-
-
-#include "trippy.h"
-//#include "80s.h"
-//#include "angularj.h"
-//#include "mixp.h"
-//#include "tekke.h"
+#if   defined(KIT_80S)
+  #include "80s.h"
+#elif defined(KIT_ANGULARJ)
+  #include "angularj.h"
+#elif defined(KIT_MIX)
+  #include "mixp.h"
+#elif defined(KIT_TEKKE)
+  #include "tekke.h"
+#else
+  #include "trippy.h"
+#endif
 
 // the beatboxes need to be redone 02.12.2025
 //#include "beatbox.h"
@@ -263,8 +265,26 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
 // include here to avoid forward references - I'm lazy :)
 #include "seq.h"
 #include "eeprom.h"
+
+bool saveStatus = false;
 #include "display.h"
 
+// ---------------------------------------------------------------------------
+// Audio mixing: precomputed per-voice gain + attack ramp (anti-click)
+// Derived from wgd chambord
+// ---------------------------------------------------------------------------
+
+#define RAMP_LEN 48                 // ~1.1ms attack at 44.1kHz to kill retrigger clicks
+int32_t  voice_gain[NTRACKS];       // Q15 gain (level/1000) precomputed so the mix loop has no divide
+uint16_t voice_ramp[NTRACKS];       // attack ramp counter per track, counts up to RAMP_LEN
+
+// set a track level (0-1000) and recompute its Q15 mix gain
+inline void setLevel(int track, int level) {
+  if (level < 0) level = 0;
+  if (level > 1000) level = 1000;
+  voice[track].level = level;
+  voice_gain[track] = ((int32_t)level * 32768) / 1000;
+}
 
 bool starting = false;
 
@@ -346,6 +366,12 @@ void setup() {
   digitalWrite(23, HIGH);
 
   display_value(NUM_SAMPLES); // show number of samples on the display
+
+  // init per-voice mix gains and ramps, then restore saved settings from flash
+  for (int t = 0; t < NTRACKS; ++t) {
+    setLevel(t, voice[t].level);
+    voice_ramp[t] = RAMP_LEN;   // not ramping until first trigger
+  }
 
   // try to retrieve saved preset if not, init slots
   EEPROM.begin(2048); // the 8 slots we save now are only 384 bytes, but it'll probably grow
@@ -450,6 +476,7 @@ void loop() {
   for (int i = 0; i <= 8; ++i) { // scan all the buttons
     if (button[i]) {
 
+      saveStatus = false; // for display when saving
       anybuttonpressed = true;
 
       // a track button is pressed
@@ -468,6 +495,7 @@ void loop() {
         }
         if (result >= 0 && result <= NUM_SAMPLES - 1) {
           voice[current_track].sample = result;
+          voice_ramp[current_track] = 0; // re-attack to soften the swap if it's ringing
           currentConfig.sample[i] = result; // save config 0 - 31
 
         }
@@ -501,10 +529,11 @@ void loop() {
           currentConfig.tempo = bpm;
           updateMemorySlot(selected_preset); // update the memory slot before switching
           selected_preset = current_track;
-          //DAC.end();
           saveToEEPROM(current_track);
-          //DAC.begin();
+          saveStatus = true;
           loading = false;
+          //saveStatus = false;
+
 
         } else if (loadSave == 1 && ! loading && selected_preset != current_track) {
           loading = true; // make sure audio is off
@@ -514,6 +543,7 @@ void loop() {
           loadFromMemorySlot(current_track); // load it from memory
           loading = false;
         }
+
       }
 
       // change pitch on pot 0
@@ -737,7 +767,7 @@ void loop1() {
 
   if (! loading ) {
 
-    int32_t newsample, samplesum = 0, filtersum;
+    int32_t newsample, samplesum = 0; //, filtersum;
     uint32_t index;
     int16_t samp0, samp1, delta, tracksample;
 
@@ -747,28 +777,34 @@ void loop1() {
        we step through the sample array by sampleincrement - sampleincrement is treated as a 1 bit integer and a 12 bit fraction
        for sample lookup sample.sampleindex is converted to a 20 bit integer which limits the max sample size to 2**20 or about 1 million samples, about 45 seconds
     */
+
     for (int track = 0; track < NTRACKS; ++track) { // look for samples that are playing, scale their volume, and add them up
-      tracksample = voice[track].sample; // precompute for a little more speed below
-      index = voice[track].sampleindex >> 12; // get the integer part of the sample increment
-      if (index >= sample[tracksample].samplesize) voice[track].isPlaying = false; // have we played the whole sample?
-      if (voice[track].isPlaying) { // if sample is still playing, do interpolation
-        
-        samp0 = sample[tracksample].samplearray[index]; // get the first sample to interpolate
-        samp1 = sample[tracksample].samplearray[index + 1]; // get the second sample
-        delta = samp1 - samp0;
-        newsample = (int32_t)samp0 + ((int32_t)delta * ((int32_t)voice[track].sampleindex & 0x0fff)) / 4096; // interpolate between the two samples
-
-        //samplesum+=((int32_t)samp0+(int32_t)delta*(sample[i].sampleindex & 0x0fff)/4096)*sample[i].play_volume;
-
-        samplesum += (newsample * (127 * voice[track].level)) / 1000;
-        voice[track].sampleindex += voice[track].sampleincrement; // add step increment
+      if (!voice[track].isPlaying) continue;
+      int16_t tracksample = voice[track].sample;
+      uint32_t index = voice[track].sampleindex >> 12; // integer part of the fixed-point index
+      // stop one sample early so the index+1 interpolation read stays in bounds
+      if (index >= sample[tracksample].samplesize - 1) {
+        voice[track].isPlaying = false;
+        continue;
       }
-      
+      int16_t samp0 = sample[tracksample].samplearray[index];     // first sample to interpolate
+      int16_t samp1 = sample[tracksample].samplearray[index + 1]; // second sample
+      int32_t delta = samp1 - samp0;
+      int32_t newsample = (int32_t)samp0 + (delta * (int32_t)(voice[track].sampleindex & 0x0fff)) / 4096; // interpolate
+
+      int32_t s = ((int32_t)newsample * voice_gain[track]) >> 15; // apply precomputed Q15 gain (no per-sample divide)
+      if (voice_ramp[track] < RAMP_LEN) {                          // brief attack ramp suppresses retrigger clicks
+        s = (s * voice_ramp[track]) / RAMP_LEN;
+        voice_ramp[track]++;
+      }
+      samplesum += s;
+      voice[track].sampleindex += voice[track].sampleincrement;    // advance by pitch step
     }
 
-    samplesum = samplesum >> 7; // adjust for play_volume multiply above
-    if  (samplesum > 32767) samplesum = 32767; // clip if sample sum is too large
-    if  (samplesum < -32767) samplesum = -32767;
+    // headroom + soft clip: a single full-level hit passes ~unchanged while
+    // simultaneous voices saturate smoothly through tanh instead of hard-clipping.
+    float norm = samplesum * (1.0f / 32767.0f);
+    int16_t out =  (int16_t)(tanhf(norm) * 32767.0f);
 
     /*
         // filter
@@ -777,15 +813,9 @@ void loop1() {
        }
     */
 
-#ifdef MONITOR_CPU
-    digitalWrite(CPU_USE, 0); // low - CPU not busy
-#endif
     // write samples to DMA buffer - this is a blocking call so it stalls when buffer is full
-    DAC.write(int16_t(samplesum)); // left
+    DAC.write(out); // left
 
-#ifdef MONITOR_CPU
-    digitalWrite(CPU_USE, 1); // hi = CPU busy
-#endif
   }
 
 }
