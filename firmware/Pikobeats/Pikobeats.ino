@@ -160,6 +160,13 @@ const int encoderA_pin = 18;
 const int encoderB_pin = 19;
 const int encoderSW_pin = 28;
 
+// Encoder direction. 1 = normal, -1 = inverted. The CI builds both variants by
+// passing -DCHAMBORD_ENC_DIR=... ; to change it locally edit the default below.
+#ifndef ENC_DIR
+#define ENC_DIR 1
+#endif
+const int ENCODER_DIR = ENC_DIR;
+
 
 // encoder
 RotaryEncoder encoder(encoderB_pin, encoderA_pin, RotaryEncoder::LatchMode::FOUR3);
@@ -442,7 +449,7 @@ void loop() {
   encoder.tick();
   int encoder_pos = encoder.getPosition();
   if ( (encoder_pos != encoder_pos_last )) {
-    encoder_delta = encoder_pos - encoder_pos_last;
+    encoder_delta = (encoder_pos - encoder_pos_last) * ENCODER_DIR;
   }
 
 
