@@ -48,7 +48,7 @@ jobs:
       - name: Build ${{ matrix.kit.name }}${{ matrix.enc.suffix }}
         run: |
           arduino-cli compile \
-            -b rp2040:rp2040:rpipico:freq=276,opt=Optimize3 \
+            -b rp2040:rp2040:rpipico:freq=276,opt=Optimize2 \
             --build-property "compiler.cpp.extra_flags=-DENC_DIR=${{ matrix.enc.dir }} ${{ matrix.kit.flag }}" \
             --output-dir out \
             firmware/Pikobeats
