@@ -250,6 +250,7 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
   sampledefs.h contains other information not used by this program e.g. the name of the sample file - I wrote it for another project
    wave2header also creates "samples.h" which #includes all the generated header files
 */
+
 #if   defined(KIT_80S)
   #include "80s.h"
 #elif defined(KIT_ANGULARJ)
@@ -421,6 +422,13 @@ void setup() {
     starting = false;
     loading = false;
   }
+
+  // init per-voice mix gains and ramps, then restore saved settings from flash
+  for (int t = 0; t < NTRACKS; ++t) {
+    setLevel(t, voice[t].level);
+    voice_ramp[t] = RAMP_LEN;   // not ramping until first trigger
+  }
+
 
   // now start the dac
   // set up Pico PWM audio output

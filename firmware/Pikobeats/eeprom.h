@@ -68,6 +68,8 @@ void updateRythm() {
     voice[i].sampleincrement = pitch; // stored as 8 bit
     voice[i].level = level; // 0 - 1023 also 8 bits
     voice[i].sample = sample;
+    setLevel(i, voice[i].level);
+
     if (debug) {
       Serial.println(hits);
       Serial.println(offset);
