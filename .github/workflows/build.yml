@@ -23,6 +23,7 @@ jobs:
           - { name: angularj,  flag: "-DKIT_ANGULARJ" }
           - { name: mixp,       flag: "-DKIT_MIXP" }
           - { name: tekke,     flag: "-DKIT_TEKKE" }
+          - { name: hiphop,     flag: "-DKIT_HIPHOP" }
         enc:
           - { dir: "1",  suffix: "" }                    # normal encoder
           - { dir: "-1", suffix: ".encoder_reversed" }   # reversed encoder
