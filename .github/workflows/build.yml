@@ -21,7 +21,7 @@ jobs:
           - { name: trippy,    flag: "" }
           - { name: 80s,       flag: "-DKIT_80S" }
           - { name: angularj,  flag: "-DKIT_ANGULARJ" }
-          - { name: mix,       flag: "-DKIT_MIX" }
+          - { name: mixp,       flag: "-DKIT_MIXP" }
           - { name: tekke,     flag: "-DKIT_TEKKE" }
         enc:
           - { dir: "1",  suffix: "" }                    # normal encoder

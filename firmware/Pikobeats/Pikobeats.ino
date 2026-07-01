@@ -251,6 +251,8 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
    wave2header also creates "samples.h" which #includes all the generated header files
 */
 
+#define KIT_HIPHOP
+
 #if   defined(KIT_80S)
   #include "80s.h"
 #elif defined(KIT_ANGULARJ)
@@ -259,6 +261,8 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
   #include "mixp.h"
 #elif defined(KIT_TEKKE)
   #include "tekke.h"
+#elif defined(KIT_HIPHOP)
+  #include "hiphop.h"
 #else
   #include "trippy.h"
 #endif
@@ -784,7 +788,6 @@ void loop1() {
 
     int32_t newsample, samplesum = 0; //, filtersum;
     uint32_t index;
-    int16_t samp0, samp1, delta, tracksample;
 
     /* oct 22 2023 resampling code
        to change pitch we step through the sample by .5 rate for half pitch up to 2 for double pitch

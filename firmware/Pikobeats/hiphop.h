@@ -1,23 +1,25 @@
- #define NUM_VOICES 32
+
+#define NUM_VOICES 32
+
 struct voice_t {
   int16_t sample;   // index of the sample structure in sampledefs.h
-  int16_t level;   // 0-1000 for legacy reasons
+  int16_t level;   // 0-7000 for legacy reasons
   uint32_t sampleindex; // 20:12 fixed point index into the sample array
   uint16_t sampleincrement; // 1:12 fixed point sample step for pitch changes
   bool isPlaying;  // true when sample is playing
 } voice[NUM_VOICES] = {
-  0,700, 0, 4096, false, //snr 10
-  1,700, 0, 4096, false, //snr 10
-  2,700, 0, 4096, false, //hfht
-  3,1100, 0, 4096, false, //ohat 3
-  4,700, 0, 4096, false, //rim
-  5,700, 0, 4096, false, //sdst 07
-  6,700, 0, 4096, false, //tome 01
-  7,700, 0, 4096, false,  //clH
+  0,700, 0, 4096, false,
+  1,700, 0, 4096, false,
+  2,700, 0, 4096, false,
+  3,700, 0, 4096, false,
+  4,700, 0, 4096, false,
+  5,700, 0, 4096, false,
+  6,700, 0, 4096, false,
+  7,700, 0, 4096, false,
   8,700, 0, 4096, false,
   9,700, 0, 4096, false,
   10,700, 0, 4096, false,
-  11,110, 0, 4096, false,
+  11,700, 0, 4096, false,
   12,700, 0, 4096, false,
   13,700, 0, 4096, false,
   14,700, 0, 4096, false,
@@ -39,13 +41,4 @@ struct voice_t {
   30,700, 0, 4096, false,
   31,700, 0, 4096, false,
 };
-#include "mixp/samples.h" // 4 kits in one
-
-/*             
-  int16_t sample;   // index of the sample structure in sampledefs.h
-  int16_t level;   // 0-1000 for legacy reasons
-  uint32_t sampleindex; // 20:12 fixed point index into the sample array
-  uint16_t sampleincrement; // 1:12 fixed point sample step for pitch changes
-  bool isPlaying;  // true when sample is playing
-                                      
-*/
+#include "hiphop/samples.h"
