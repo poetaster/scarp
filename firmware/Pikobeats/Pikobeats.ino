@@ -96,7 +96,7 @@ uint16_t rightRotate(int shift, uint16_t value, uint8_t pattern_length) {
 #define _TIMERINTERRUPT_LOGLEVEL_     4
 #include "RPi_Pico_TimerInterrupt.h"
 #define TIMER0_INTERVAL_MS       1
-#define DEBOUNCING_INTERVAL_MS   4// 80
+#define DEBOUNCING_INTERVAL_MS   7// 80
 #define LOCAL_DEBUG              1
 
 // Init RPI_PICO_Timer, can use any from 0-15 pseudo-hardware timers
@@ -759,9 +759,9 @@ void loop1() {
   // a clock tick. if we get 2ppqn, do a reset and clock pulse
   // else, falls through to the RPM BPM set below which ensures
   // if there is no clockin, run the clocks by internal time
-  
+
   current_clk = digitalRead(CLOCKIN);
-  
+
   if ( current_clk != last_clk ) {
     clk_count++;
     if ( clk_count % 2 == 0) {
@@ -771,10 +771,11 @@ void loop1() {
     }
   }
   last_clk = current_clk;
-  
+
   // we have input pulses, timer returns BPM. if not, do internal clocks.
   // this is crappy, but works :)
-  if ( RPM > bpm + 1 || RPM < bpm - 1 && RPM > 49) {
+  //if ( RPM > bpm + 1 || RPM < bpm - 1 && RPM > 49) {
+  if ( RPM > 29 && RPM < 300) {
     //reset = true; //reset seq
     bpm = RPM;
     externalSync = true;
