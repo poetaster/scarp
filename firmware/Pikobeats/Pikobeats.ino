@@ -251,8 +251,6 @@ PWMAudio DAC(PWMOUT);  // 16 bit PWM audio
    wave2header also creates "samples.h" which #includes all the generated header files
 */
 
-#define KIT_HIPHOP
-
 #if   defined(KIT_80S)
   #include "80s.h"
 #elif defined(KIT_ANGULARJ)
