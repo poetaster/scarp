@@ -4,7 +4,7 @@
 #define DEFAULT_SEQ_STEPS 16 // up to 16 step sequencer
 
 // from pikocore
-#define CLOCK_RATE 264000?
+#define CLOCK_RATE 264000
 
 #define TEMPO    120 // default tempo
 #define PPQN 24  // clocks per quarter note the POs and volcas want 2 pulses per 1/4 note. 
