@@ -3,6 +3,8 @@ The scarp project, named like it's brethren, rampart and keep (aka. moat) is an 
 
 ![PCB](scarp-final.jpg)
 
+UPDATE, Aug. 28, 2026. New layout to be able to use 2 pin silicon 8mm buttons.
+
 It can include a 4pin I2C display. Or a three pin I2S DAC. All the pins on the pico are exposed and you can add headers to use them.
 
 The board uses all GPIO. 8 buttons, 8 leds, 2 pots and an encoder.
@@ -21,7 +23,7 @@ Include examples for
 I sell my tonetoys synths at https://poetaster.org or on etsy at https://tonetoys.etsy.com, or Tindie :)
 
 <a href="https://www.tindie.com/stores/poetaster/?ref=offsite_badges&utm_source=sellers_poetaster&utm_medium=badges&utm_campaign=badge_small"><img src="https://d2ss6ovg47m0r5.cloudfront.net/badges/tindie-smalls.png" alt="I sell on Tindie" width="200" height="55"></a>
- 
+
 I've had a bunch of fun with:
 
 A Drum sequencer for the Pikocore, https://github.com/poetaster/PikoBeats, derived from https://github.com/rheslip/PikoBeats .
@@ -30,8 +32,8 @@ This project was inspired by Teenage Engineering, pikocore designed by Zack Scho
 
 THIS BOARD is in production and the first version, with only pwm output works really well!.
 
-![PCB](scarp_pcb.jpg)
+![PCB](scarp-2_pcb.jpg)
 
-![Schematic](scarp_schem.jpg)
+![Schematic](scarp-2_schem.jpg)
 
-![Breadboard](scarp-breadboard.png)
+![Breadboard](scarp-2_bb.png)
